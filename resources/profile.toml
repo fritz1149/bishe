@@ -1,0 +1,3 @@
+[public_cloud]
+ip_port = "10.0.0.29:31196"
+edge_domain_group_id = "08536834-439b-491c-bf4a-d06c6382ed29"
