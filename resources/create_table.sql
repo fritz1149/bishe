@@ -8,7 +8,8 @@ create table if not exists compute_nodes (
     id varchar(64) primary key default '',
     ip_addr varchar(64) not null default '0.0.0.0',
     slot integer not null default  0,
-    edge_domain_id varchar(64) not null default ''
+    edge_domain_id varchar(64) not null default '',
+    father varchar(64) not null default '0.0.0.0'
 );
 
 create table if not exists compute_node_edges (

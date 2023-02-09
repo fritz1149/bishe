@@ -45,7 +45,6 @@ pub fn daemon_main() -> Sender<Signal> {
                     }
                     Ok(text) => {
                         failed_task = None;
-                        debug!("{}", &text);
                     }
                 }
             }

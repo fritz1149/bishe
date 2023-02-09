@@ -7,7 +7,7 @@ use tokio::runtime::{Handle, Runtime};
 use super::main::{Signal, Stage};
 use super::tasks::*;
 
-pub type Task = fn(&Runtime) -> Result<String, &'static str>;
+pub type Task = fn(&Runtime) -> Result<(), &'static str>;
 
 pub struct TaskChain {
     task_vec: Vec<Task>,
@@ -49,6 +49,7 @@ impl TaskChain {
 pub fn task_map() -> HashMap<Stage, TaskChain> {
     let init = TaskChain::new()
         .set_task(get_topo)
+        .set_task(deploy_traffic_monitor)
         .set_next(Stage::Deploy)
         .set_transfer(Signal::Stop, Stage::Stop);
     let deploy = TaskChain::new()

@@ -26,6 +26,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .nest("/topo", controller::topo_controller::api())
+        .nest("/ws", controller::ws_controller::api())
         ;
 
     // run it with hyper on localhost:3000

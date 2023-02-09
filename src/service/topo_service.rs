@@ -1,3 +1,4 @@
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, MutexGuard};
 use axum::body::HttpBody;
 use axum::Json;
@@ -46,9 +47,13 @@ impl TopoService {
         Ok(self)
     }
     pub async fn clear(self) -> Result<Self, &'static str> {
-        try_join!(common_mapper::delete_all("edge_domains"),
-            common_mapper::delete_all("compute_nodes"),
-            common_mapper::delete_all("compute_node_edges"),
+        let delete_all = |table_name|async move{
+            let mut rb = RB.lock().await;
+            common_mapper::delete_all(&mut *rb, table_name).await
+        };
+        try_join!(delete_all("edge_domains"),
+            delete_all("compute_nodes"),
+            delete_all("compute_node_edges"),
         ).map_err(|_|DATABASE_ERROR)?;
         Ok(self)
     }
