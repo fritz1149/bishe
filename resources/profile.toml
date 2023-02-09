@@ -1,0 +1,5 @@
+[cloud]
+server_address = "localhost:3000"
+
+[edge]
+interval = 5
