@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use log::LevelFilter;
+use log::{debug, LevelFilter};
 use rbatis::Rbatis;
 use tokio::sync::Mutex;
 
@@ -14,8 +14,9 @@ pub fn init() -> Rbatis {
     let rb = Rbatis::new();
     rb.init(
         rbdc_sqlite::driver::SqliteDriver{},
-        "sqlite://target/sqlite.db"
-    ).unwrap();
+        "sqlite://resources/sqlite.db"
+    ).expect("创建sqlite存储失败");
+    debug!("sqlite初始化完毕");
     rb
 }
 

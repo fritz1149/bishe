@@ -1,0 +1,70 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dispatcher-cm
+  namespace: acbot-backend
+data:
+  profile.toml: |+
+    [public_cloud]
+    ip_port = "10.0.0.29:31196"
+    edge_domain_group_id = "08536834-439b-491c-bf4a-d06c6382ed29"
+  create_table.sql: |+
+    create table if not exists edge_domains (
+        id varchar(64) primary key default '',
+        name varchar(64) not null default '',
+        is_cloud boolean not null default false
+    );
+    create table if not exists compute_nodes (
+    id varchar(64) primary key default '',
+    ip_addr varchar(64) not null default '0.0.0.0',
+    slot integer not null default  0,
+    edge_domain_id varchar(64) not null default '',
+    father varchar(64) not null default '0.0.0.0'
+    );
+    create table if not exists compute_node_edges (
+    compute_node_id1 varchar(64),
+    compute_node_id2 varchar(64),
+    primary key(compute_node_id1, compute_node_id2)
+    )
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: dispatcher
+  namespace: acbot-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dispatcher
+  template:
+    metadata:
+      labels:
+        app: dispatcher
+    spec:
+      containers:
+        - name: dispatcher
+          image: 19231149/dispatcher:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - mountPath: /work/resources
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: dispatcher-cm
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: dispatcher
+  namespace: acbot-backend
+spec:
+  type: NodePort
+  selector:
+    app: dispatcher
+  ports:
+    - port: 3000
+      targetPort: 3000

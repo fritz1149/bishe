@@ -6,6 +6,7 @@ use std::sync::mpsc::Sender;
 use std::time::Duration;
 use axum::body::HttpBody;
 use lazy_static::lazy_static;
+use serde_json::Value;
 use tokio::runtime::{Handle, Runtime};
 use tokio::time::sleep;
 use crate::config::profile_config::CONFIG;
@@ -40,7 +41,8 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
             .text()
             .await.map_err(|_|REQWEST_ERROR)?;
         // 落库
-        let text = serde_json::from_str(&*text).map_err(|_|REQWEST_ERROR)?;
+        let text: Value = serde_json::from_str(&*text).map_err(|_|REQWEST_ERROR)?;
+        debug!("请求的网络拓扑：{}", text.to_string());
         TopoService::new()
             .parse(text).await?
             .clear().await?
