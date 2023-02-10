@@ -1,7 +1,7 @@
 FROM rust:alpine3.17 as builder
 WORKDIR /work/
 COPY . .
-RUN cargo build --bin dispatcher
+RUN cargo build --bin dispatcher --release
 
 FROM alpine:3.17
 EXPOSE 3000
