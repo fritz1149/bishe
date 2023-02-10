@@ -12,4 +12,6 @@ jobs:
     - name: 构建
       run: docker build -t 19231149/dispatcher .
     - name: 上传
-      run: docker push 19231149/dispatcher
+      run: |
+        docker login --username 19231149 --password 20011013cc
+        docker push 19231149/dispatcher
