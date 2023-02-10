@@ -15,7 +15,7 @@ pub fn init() -> Rbatis {
     rb.init(
         rbdc_sqlite::driver::SqliteDriver{},
         "sqlite://resources/sqlite.db"
-    ).expect("创建sqlite存储失败");
+    ).expect("创建sqlite存储失败！");
     debug!("sqlite初始化完毕");
     rb
 }
