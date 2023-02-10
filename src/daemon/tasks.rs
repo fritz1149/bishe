@@ -7,6 +7,7 @@ use std::time::Duration;
 use axum::body::HttpBody;
 use lazy_static::lazy_static;
 use serde_json::Value;
+use tokio::join;
 use tokio::runtime::{Handle, Runtime};
 use tokio::time::sleep;
 use crate::config::profile_config::CONFIG;
@@ -26,6 +27,7 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
     params.insert("id", &CONFIG.public_cloud.edge_domain_group_id);
 
     let request = async {
+        debug!("请求之前 ");
         // 请求过程
         let response = client.get(url)
             .header("Authorization", "")
@@ -33,6 +35,7 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
             .timeout(Duration::from_secs(3))
             .send()
             .await.map_err(|_|REQWEST_FAILED)?;
+        debug!("解析之前");
         // 解析过程
         if response.status().as_u16() != 200{
             return Err(REQWEST_ERROR);
@@ -40,6 +43,7 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
         let text = response
             .text()
             .await.map_err(|_|REQWEST_ERROR)?;
+        debug!("落库之前");
         // 落库
         let text: Value = serde_json::from_str(&*text).map_err(|_|REQWEST_ERROR)?;
         debug!("请求的网络拓扑：{}", text.to_string());

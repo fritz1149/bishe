@@ -1,1 +1,4 @@
 /target
+.gitignore
+chef-dockerfile
+builder-dockerfile

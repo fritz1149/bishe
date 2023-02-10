@@ -3,7 +3,7 @@ WORKDIR /work/
 COPY . .
 RUN cargo build --bin dispatcher --release
 
-FROM busybox:glibc
+FROM debian:stable-slim AS runtime
 EXPOSE 3000
 COPY --from=builder /work/target/release/dispatcher /work/dispatcher
 WORKDIR /work/
