@@ -9,6 +9,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::{join, try_join};
+use tokio::task::JoinHandle;
 use crate::config::profile_config::CONFIG;
 use crate::handler::handlers::set_target;
 use crate::handler::route::handler_map;
@@ -18,20 +19,19 @@ use crate::model::DaemonState;
 const CONNECTION_BREAK: &str = "连接中断";
 pub const PARSE_FAILED: &str = "解析失败";
 
-pub async fn connect() {
+pub async fn connect() -> (Sender<Value>, JoinHandle<Result<(), &'static str>>, JoinHandle<Result<(), &'static str>>) {
     let url = format!("ws://{}/ws/{}", &CONFIG.cloud.server_address, &HOSTNAME.as_str());
     println!("{}", url);
     let (ws_stream, _) = connect_async(url).await.expect("ws连接失败");
     println!("ws连接成功");
     let (ws_send, ws_recv) = ws_stream.split();
     let (async_send, async_recv) = oneshot::channel::<Value>();
-    let handle1 = tokio::spawn(read(ws_recv, async_send).map_err(|e|println!("{}",e)));
-    let handle2 = tokio::spawn(write(ws_send, async_recv).map_err(|e|println!("{}",e)));
-    join!(handle1, handle2);
+    let handle_read = tokio::spawn(read(ws_recv));
+    let handle_write = tokio::spawn(write(ws_send, async_recv));
+    (async_send, handle_read, handle_write)
 }
 
-async fn read(mut recv: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-              should_write: Sender<Value>) -> Result<(), &'static str> {
+async fn read(mut recv: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>) -> Result<(), &'static str> {
 
     let mut handler_map = handler_map();
 

@@ -10,8 +10,10 @@ pub struct DaemonState {
     pub targets: Vec<Target>
 }
 // 网络性能相关参数
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NetInfo {
-    pub hostname: String,
-    pub bandwidth: u32,
-    pub delay: u32
+    pub origin_hostname: String,
+    pub target_hostname: String,
+    pub bandwidth: f64,
+    // pub delay: u32
 }

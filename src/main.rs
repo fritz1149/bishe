@@ -1,6 +1,7 @@
 use std::env;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
+use tokio::join;
 use crate::daemon::daemon_main;
 use crate::model::DaemonState;
 use crate::ws::connect;
@@ -20,6 +21,7 @@ lazy_static! {
 async fn main() {
     // 使用一次HOSTNAME，若读取不到直接退出
     println!("hostname: {}", HOSTNAME.as_str());
-    daemon_main();
-    connect().await;
+    let (should_write, handle_read, handle_write) = connect().await;
+    daemon_main(should_write);
+    join!(handle_read, handle_write);
 }

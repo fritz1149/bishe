@@ -3,19 +3,6 @@
 version = 3
 
 [[package]]
-name = "Monitor"
-version = "0.1.0"
-dependencies = [
- "futures",
- "lazy_static",
- "serde",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "toml",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -303,6 +290,19 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys",
+]
+
+[[package]]
+name = "monitor"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "toml",
 ]
 
 [[package]]
