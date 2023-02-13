@@ -23,3 +23,5 @@ toml = "0.7.1"
 reqwest = "0.11.14"
 futures = "0.3.26"
 #tower-http = { version = "0.3.5", features = ["trace"] }
+kube = { version = "0.78.0", features = ["runtime", "derive"] }
+k8s-openapi = { version = "0.17.0", features = ["v1_20"] }

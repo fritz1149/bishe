@@ -62,6 +62,7 @@ pub fn daemon_main() -> Sender<Signal> {
             let signal;
             if no_more_task {
                 signal = recv.recv().unwrap_or(Signal::Quit);
+                debug!("⭐收到信号：{:?}", signal);
             } else {
                 signal = match recv.recv_timeout(Duration::from_secs(3)) {
                     Ok(x) => x,

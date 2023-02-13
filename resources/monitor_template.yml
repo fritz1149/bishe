@@ -1,0 +1,38 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: acbot-edge
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: monitor
+  namespace: acbot-edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dispatcher
+  template:
+    metadata:
+      labels:
+        app: dispatcher
+    spec:
+      containers:
+        - name: dispatcher
+          image: 19231149/dispatcher:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - mountPath: /work/resources
+              name: config
+            - mountPath: /work/sqlite
+              name: sqlite
+      volumes:
+        - name: config
+          configMap:
+            name: dispatcher-cm
+        - name: sqlite
+          persistentVolumeClaim:
+            claimName: dispatcher-pvc-1

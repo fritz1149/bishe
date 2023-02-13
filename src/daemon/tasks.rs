@@ -5,6 +5,9 @@ use log::debug;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use axum::body::HttpBody;
+use k8s_openapi::api::core::v1::{Node, Pod};
+use kube::{Api, Client, ResourceExt};
+use kube::api::ListParams;
 use lazy_static::lazy_static;
 use serde_json::Value;
 use tokio::join;
@@ -50,14 +53,29 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
         TopoService::new()
             .parse(text).await?
             .clear().await?
+            .calc_topo_order().await?
             .save().await?;
         Ok(())
     };
     rt.block_on(request)
 }
 
+const K8S_CONTACT_ERROR: &str = "k8s集群交互错误";
 pub(super) fn deploy_traffic_monitor(rt: &Runtime) -> Result<(), &'static str> {
     // 部署流量监测
-    // 新开一个线程持续处理收到的流量
+    let deploy = async {
+        debug!("准备获取集群信息");
+        let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
+        let node_api: Api<Node> = Api::all(client);
+        let mut hostnames = Vec::new();
+        for node in node_api.list(&ListParams::default()).await.map_err(|_|K8S_CONTACT_ERROR)? {
+            // println!("found node {}", node.name_any());
+            hostnames.push(node.name_any().clone());
+        }
+        debug!("{:?}", hostnames);
+        Ok::<(),&'static str>(())
+    };
+    // 处理收到的流量
+    // rt.block_on(deploy)
     Ok(())
 }

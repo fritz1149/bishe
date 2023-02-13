@@ -1,37 +1,83 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: acbot-edge
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: dispatcher-cm
-  namespace: acbot-backend
+  namespace: acbot-edge
 data:
   profile.toml: |+
     [public_cloud]
-    ip_port = "10.0.0.29:31196"
-    edge_domain_group_id = "08536834-439b-491c-bf4a-d06c6382ed29"
+    ip_port = "10.0.0.29:31073"
+    edge_domain_group_id = "c2cd788e-d6bb-4a03-91bb-0775aed19326"
   create_table.sql: |+
-    create table if not exists edge_domains (
-        id varchar(64) primary key default '',
-        name varchar(64) not null default '',
-        is_cloud boolean not null default false
+    drop table if exists edge_domains;
+    create table edge_domains (
+                                  id varchar(64) primary key default '',
+                                  name varchar(64) not null default '',
+                                  is_cloud boolean not null default false,
+                                  root_node_id varchar(64) not null default ''
     );
-    create table if not exists compute_nodes (
-    id varchar(64) primary key default '',
-    ip_addr varchar(64) not null default '0.0.0.0',
-    slot integer not null default  0,
-    edge_domain_id varchar(64) not null default '',
-    father varchar(64) not null default '0.0.0.0'
+    drop table if exists compute_nodes;
+    create table compute_nodes (
+                                   id varchar(64) primary key default '',
+                                   ip_addr varchar(64) not null default '0.0.0.0',
+                                   slot integer not null default  0,
+                                   edge_domain_id varchar(64) not null default '',
+                                   father_hostname varchar(64) default '',
+                                   node_type varchar(64) check(node_type in ('leaf', 'non-leaf', 'cloud'))
+                                       not null default 'cloud'
     );
-    create table if not exists compute_node_edges (
-    compute_node_id1 varchar(64),
-    compute_node_id2 varchar(64),
-    primary key(compute_node_id1, compute_node_id2)
+    drop table if exists compute_node_edges;
+    create table compute_node_edges (
+                                        compute_node_id1 varchar(64),
+                                        compute_node_id2 varchar(64),
+                                        primary key(compute_node_id1, compute_node_id2)
+    );
+    drop table if exists net_infos;
+    create table net_infos (
+                               origin_hostname varchar(64),
+                               target_hostname varchar(64),
+                               bandwidth Double,
+                               delay Double,
+                               primary key (origin_hostname, target_hostname)
     )
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: dispatcher-pv-1
+  namespace: acbot-edge
+  labels:
+    type: hostpath
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/home/ivic/dispatcher/"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dispatcher-pvc-1
+  namespace: acbot-edge
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: dispatcher
-  namespace: acbot-backend
+  namespace: acbot-edge
 spec:
   replicas: 1
   selector:
@@ -45,22 +91,27 @@ spec:
       containers:
         - name: dispatcher
           image: 19231149/dispatcher:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           volumeMounts:
             - mountPath: /work/resources
               name: config
+            - mountPath: /work/sqlite
+              name: sqlite
       volumes:
         - name: config
           configMap:
             name: dispatcher-cm
+        - name: sqlite
+          persistentVolumeClaim:
+            claimName: dispatcher-pvc-1
 ---
 kind: Service
 apiVersion: v1
 metadata:
   name: dispatcher
-  namespace: acbot-backend
+  namespace: acbot-edge
 spec:
   type: NodePort
   selector:
@@ -68,3 +119,4 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
+
