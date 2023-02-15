@@ -1,5 +1,6 @@
-[cloud]
-server_address = "10.0.0.29:31451"
+[dispatcher]
+#server_address = "host.docker.internal:3000"
+server_address = "10.0.0.29:31433"
 
-[edge]
+[monitor]
 interval = 2

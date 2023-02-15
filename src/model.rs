@@ -15,5 +15,5 @@ pub struct NetInfo {
     pub origin_hostname: String,
     pub target_hostname: String,
     pub bandwidth: f64,
-    // pub delay: u32
+    pub delay: f64
 }

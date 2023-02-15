@@ -15,8 +15,11 @@ RUN cargo build --release --bin monitor
 
 # We do not need the Rust toolchain to run the binary!
 FROM networkstatic/iperf3:latest AS runtime
-EXPOSE 3000
+RUN apt-get update && apt-get install -y inetutils-ping
+EXPOSE 5201
 COPY --from=builder /app/target/release/monitor /work/monitor
+COPY --from=builder /app/run.sh /work/run.sh
 WORKDIR work
-ENTRYPOINT ["/usr/bin/env"]
-CMD ["./monitor"]
+RUN chmod +x ./run.sh
+ENTRYPOINT ["./run.sh"]
+#ENTRYPOINT ["./monitor"]

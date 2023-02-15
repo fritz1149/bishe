@@ -6,9 +6,9 @@ use serde_json::{Map, Value};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::Message;
-use tokio::sync::oneshot;
-use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::{join, try_join};
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Sender, Receiver, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 use crate::config::profile_config::CONFIG;
 use crate::handler::handlers::set_target;
@@ -19,13 +19,13 @@ use crate::model::DaemonState;
 const CONNECTION_BREAK: &str = "连接中断";
 pub const PARSE_FAILED: &str = "解析失败";
 
-pub async fn connect() -> (Sender<Value>, JoinHandle<Result<(), &'static str>>, JoinHandle<Result<(), &'static str>>) {
-    let url = format!("ws://{}/ws/{}", &CONFIG.cloud.server_address, &HOSTNAME.as_str());
+pub async fn connect() -> (UnboundedSender<Value>, JoinHandle<Result<(), &'static str>>, JoinHandle<Result<(), &'static str>>) {
+    let url = format!("ws://{}/ws/{}", &CONFIG.dispatcher.server_address, &HOSTNAME.as_str());
     println!("{}", url);
     let (ws_stream, _) = connect_async(url).await.expect("ws连接失败");
     println!("ws连接成功");
     let (ws_send, ws_recv) = ws_stream.split();
-    let (async_send, async_recv) = oneshot::channel::<Value>();
+    let (async_send, async_recv) = mpsc::unbounded_channel();
     let handle_read = tokio::spawn(read(ws_recv));
     let handle_write = tokio::spawn(write(ws_send, async_recv));
     (async_send, handle_read, handle_write)
@@ -55,10 +55,11 @@ async fn read(mut recv: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>)
 
 const SHOULD_WRITE_CLOSE: &str = "应写通道关闭";
 async fn write(mut send: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>
-               , mut should_write: Receiver<Value>) -> Result<(), &'static str> {
-    while let msg = (&mut should_write).await {
-        let text = String::from(msg.map_err(|_|SHOULD_WRITE_CLOSE)?.as_str().unwrap());
-        send.send(Message::Text(text)).map_err(|_|CONNECTION_BREAK).await?;
+               , mut should_write: UnboundedReceiver<Value>) -> Result<(), &'static str> {
+    while let msg = should_write.recv().await {
+        let msg = msg.ok_or(SHOULD_WRITE_CLOSE)?.to_string();
+        println!("should write: {}", msg);
+        send.send(Message::Text(msg)).map_err(|_|CONNECTION_BREAK).await?;
     }
     Ok(())
 }

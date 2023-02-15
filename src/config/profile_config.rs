@@ -4,19 +4,19 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[derive(Debug)]
 pub struct Config {
-    pub cloud: Cloud,
-    pub edge: Edge
+    pub dispatcher: Dispatcher,
+    pub monitor: Monitor
 }
 
 #[derive(Deserialize)]
 #[derive(Debug)]
-pub struct Cloud {
+pub struct Dispatcher {
     pub server_address: String
 }
 
 #[derive(Deserialize)]
 #[derive(Debug)]
-pub struct Edge {
+pub struct Monitor {
     pub interval: u32
 }
 
