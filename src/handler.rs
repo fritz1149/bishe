@@ -17,6 +17,9 @@ const FORMAT_ERROR: &str = "数据格式错误";
 const DATABASE_ERROR: &str = "数据库交互错误";
 pub fn save_net_info(data: Value) -> Result<(), &'static str> {
     let net_infos: Vec<NetInfo> = serde_json::from_value(data).map_err(|_| FORMAT_ERROR)?;
+    if net_infos.len() == 0 {
+        return Ok(());
+    }
     let action = async move {
         let mut rb = RB.lock().await;
         if let Err(e) = common_mapper::insert_net_infos(&mut *rb, &net_infos).await {

@@ -1,3 +1,8 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: acbot-edge
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -9,25 +14,25 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   namespace: acbot-edge
-  name: dep-editor
+  name: ds-editor
 rules:
-  - apiGroups: [""] # "" 标明 core API 组
-    resources: ["deployments"]
+  - apiGroups: ["", "apps"] # "" 标明 core API 组
+    resources: ["daemonsets"]
     verbs: ["*"]
 ---
 # 绑定Role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: dep-editor-dispatcher
+  name: ds-editor-dispatcher
   namespace: acbot-edge
 subjects:
   - kind: ServiceAccount
     name: acbot-edge-dispatcher
-    apiGroup: rbac.authorization.k8s.io
+    apiGroup: ""
 roleRef:
   kind: Role        # 此字段必须是 Role 或 ClusterRole
-  name: dep-editor
+  name: ds-editor
   apiGroup: rbac.authorization.k8s.io
 ---
 # 修改node标签的能力
@@ -38,17 +43,18 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["nodes"]
-    verbs: ["get", "watch", "list"]
+    verbs: ["get", "watch", "list", "patch"]
 ---
 # 绑定ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: node-labeler-dispatcher
 subjects:
   - kind: ServiceAccount
     name: acbot-edge-dispatcher
-    apiGroup: rbac.authorization.k8s.io
+    apiGroup: ""
+    namespace: acbot-edge
 roleRef:
   kind: ClusterRole
   name: node-labeler

@@ -6,13 +6,26 @@ metadata:
 kind: ConfigMap
 apiVersion: v1
 metadata:
+  name: monitor-cm
+  namespace: acbot-edge
+data:
+  profile.toml: |+
+    [dispatcher]
+    server_address = "10.122.29.118:32445"
+    
+    [monitor]
+    interval = 5
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
   name: dispatcher-cm
   namespace: acbot-edge
 data:
   profile.toml: |+
     [public_cloud]
-    ip_port = "10.0.0.29:31073"
-    edge_domain_group_id = "c2cd788e-d6bb-4a03-91bb-0775aed19326"
+    ip_port = "10.0.0.29:31119"
+    edge_domain_group_id = "3edc32bc-d2b6-4038-ab9a-0f71f09511ee"
   create_table.sql: |+
     drop table if exists edge_domains;
     create table edge_domains (
@@ -45,6 +58,71 @@ data:
                                delay Double,
                                primary key (origin_hostname, target_hostname)
     )
+  monitor.yml: |+
+    kind: DaemonSet
+    apiVersion: apps/v1
+    metadata:
+      name: monitor
+      namespace: acbot-edge
+    spec:
+      selector:
+        matchLabels:
+          app: monitor
+      template:
+        metadata:
+          labels:
+            app: monitor
+        spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          nodeSelector:
+            node_type: non-leaf
+          containers:
+            - name: monitor
+              image: 19231149/monitor:latest
+              imagePullPolicy: IfNotPresent
+              args:
+                - '$(NODE_NAME)'
+              env:
+                - name: NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+              ports:
+                - containerPort: 5201
+              volumeMounts:
+                - mountPath: /work/resources
+                  name: config
+          volumes:
+            - name: config
+              configMap:
+                name: monitor-cm
+  iperf-server.yml: |+
+    kind: DaemonSet
+    apiVersion: apps/v1
+    metadata:
+      name: iperf-server
+      namespace: acbot-edge
+    spec:
+      selector:
+        matchLabels:
+          app: iperf-server
+      template:
+        metadata:
+          labels:
+            app: iperf-server
+        spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          nodeSelector:
+            node_type: leaf
+          containers:
+            - name: iperf-server
+              image: networkstatic/iperf3:latest
+              imagePullPolicy: IfNotPresent
+              args: ["-s"]
+              ports:
+                - containerPort: 5201
 ---
 kind: PersistentVolume
 apiVersion: v1
@@ -59,7 +137,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/home/ivic/dispatcher/"
+    path: "/home/ubnuntu/pv/dispatcher/"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -88,6 +166,9 @@ spec:
       labels:
         app: dispatcher
     spec:
+      serviceAccountName: acbot-edge-dispatcher
+      nodeSelector:
+        "pos": cloud
       containers:
         - name: dispatcher
           image: 19231149/dispatcher:latest
@@ -119,4 +200,4 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
-
+      nodePort: 32445

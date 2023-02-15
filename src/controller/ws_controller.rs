@@ -61,7 +61,7 @@ async fn read(mut recv: SplitStream<WebSocket>, hostname: String) -> Result<(), 
         let mut msg: Value = serde_json::from_str(msg).unwrap();
         let msg_type: String = serde_json::from_value(msg["type"].take()).unwrap();
         let data = msg["data"].take();
-        debug!("msg_type: {}, data:{}", msg_type, data.to_string());
+        debug!("from {}: msg_type: {}, data:{}", &hostname, msg_type, data.to_string());
         let handler = handler_map.get(&msg_type).unwrap();
         handler(data)?;
     }

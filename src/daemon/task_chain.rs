@@ -59,6 +59,7 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
         .set_transfer(Signal::Redeploy, Stage::Deploy)
         .set_transfer(Signal::Stop, Stage::Stop);
     let stop = TaskChain::new()
+        .set_task(stop)
         .set_transfer(Signal::Start, Stage::Init);
     let mut map = HashMap::new();
     map.insert(Stage::Init, init);

@@ -1,6 +1,4 @@
-
 fn main() {
-    let mut V = vec![None, None, Some(5)];
-    for
-    // println!("{}", *b);
+    let raw = std::fs::read_to_string("resources/monitor.yml").unwrap();
+    println!("{}", raw);
 }

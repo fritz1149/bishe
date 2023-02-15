@@ -1,0 +1,25 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: iperf-server
+  namespace: acbot-edge
+spec:
+  selector:
+    matchLabels:
+      app: iperf-server
+  template:
+    metadata:
+      labels:
+        app: iperf-server
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node_type: leaf
+      containers:
+        - name: iperf-server
+          image: networkstatic/iperf3:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-s"]
+          ports:
+            - containerPort: 5201
