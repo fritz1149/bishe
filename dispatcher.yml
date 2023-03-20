@@ -24,8 +24,8 @@ metadata:
 data:
   profile.toml: |+
     [public_cloud]
-    ip_port = "10.0.0.29:31119"
-    edge_domain_group_id = "3edc32bc-d2b6-4038-ab9a-0f71f09511ee"
+    info_management_address = "info-management.acbot-backend:30370"
+
   create_table.sql: |+
     drop table if exists edge_domains;
     create table edge_domains (
@@ -137,7 +137,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/home/ubnuntu/pv/dispatcher/"
+    path: "/home/fritz/pv/dispatcher/"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

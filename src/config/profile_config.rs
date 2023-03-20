@@ -3,14 +3,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[derive(Debug)]
 pub struct Config {
-    pub public_cloud: PublicCloud
-}
-
-#[derive(Deserialize)]
-#[derive(Debug)]
-pub struct PublicCloud {
-    pub ip_port: String,
-    pub edge_domain_group_id: String
+    pub info_management_address: String
 }
 
 lazy_static!{

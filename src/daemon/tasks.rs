@@ -28,16 +28,13 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
     let client = reqwest::Client::builder()
         .no_proxy()
         .build().unwrap();
-    let url = format!("http://{}/edge_domain_group", &CONFIG.public_cloud.ip_port);
-    let mut params = HashMap::new();
-    params.insert("id", &CONFIG.public_cloud.edge_domain_group_id);
+    let url = format!("http://{}/edge_domain_group", &CONFIG.info_management_address);
 
     let request = async {
         debug!("请求之前 ");
         // 请求过程
         let response = client.get(url)
             .header("Authorization", "")
-            .query(&params)
             .timeout(Duration::from_secs(3))
             .send()
             .await.map_err(|_|REQWEST_FAILED)?;
@@ -77,7 +74,7 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime) -> Result<(), &'static str> {
         let node_api: Api<Node> = Api::all(client);
         let nodes = select_all.await.map_err(|e|SELECT_NODES_ERROR)?;
         for node in nodes {
-            let hostname = node.ip_addr.unwrap();
+            let hostname = node.ip_addr;
             let node_type = node.node_type.unwrap();
             let patch = json!({
                     "metadata": {
