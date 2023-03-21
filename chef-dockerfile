@@ -15,7 +15,9 @@ RUN cargo build --release --bin dispatcher
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:stable-slim AS runtime
+RUN apt update && apt install -y curl
 EXPOSE 3000
-COPY --from=builder /app/target/release/dispatcher /work/dispatcher
-WORKDIR work
+COPY --from=builder /app/target/release/dispatcher /app/dispatcher
+COPY ./sql /app/sql
+WORKDIR app
 CMD ["./dispatcher"]

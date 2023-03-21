@@ -21,7 +21,7 @@ pub fn init() -> Rbatis {
 }
 
 pub async fn create_table(rb: &Rbatis) {
-    let sql = std::fs::read_to_string("resources/create_table.sql").unwrap();
+    let sql = std::fs::read_to_string("sql/create_table.sql").unwrap();
     let raw = fast_log::LOGGER.get_level().clone();
     fast_log::LOGGER.set_level(LevelFilter::Off);
     let res = rb.exec(&sql, vec![]).await;

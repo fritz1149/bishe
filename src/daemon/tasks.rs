@@ -28,7 +28,8 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
     let client = reqwest::Client::builder()
         .no_proxy()
         .build().unwrap();
-    let url = format!("http://{}/edge_domain_group", &CONFIG.info_management_address);
+    let url = format!("http://{}/edge_domain/all", &CONFIG.info_management_address);
+    debug!("url: {}", url);
 
     let request = async {
         debug!("请求之前 ");
@@ -37,7 +38,7 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
             .header("Authorization", "")
             .timeout(Duration::from_secs(3))
             .send()
-            .await.map_err(|_|REQWEST_FAILED)?;
+            .await.map_err(|e| { debug!("{:?}", e); REQWEST_FAILED })?;
         debug!("解析之前");
         // 解析过程
         if response.status().as_u16() != 200{

@@ -34,6 +34,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .nest("/topo", controller::topo_controller::api())
+        .nest("/flow", controller::flow_controller::api())
         .nest("/ws", controller::ws_controller::api())
         .nest("/signal", controller::signal_controller::api())
         ;

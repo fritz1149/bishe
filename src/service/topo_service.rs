@@ -67,21 +67,21 @@ impl TopoService {
         let mut indegree_map = HashMap::new();
         let mut edge_map = HashMap::new();
         unsafe {
-            let state = self.state.as_mut().unwrap() as *mut EdgeDomainGroup;
-            for i in 0..(*state).edge_domains.len() {
-                let domain = &mut (*state).edge_domains[i] as *mut EdgeDomain;
+            let state = self.state.as_mut().unwrap();
+            for domain in state.edge_domains.iter_mut() {
+                let domain = domain as *mut EdgeDomain;
                 let id = &(*domain).id;
                 domain_map.insert(id.clone(), domain);
             }
-            for i in 0..(*state).compute_nodes.len() {
-                let node = &mut (*state).compute_nodes[i] as *mut ComputeNode;
+            for node in state.compute_nodes.iter_mut() {
+                let node = node as *mut ComputeNode;
                 let id = &(*node).id;
                 edge_map.insert(id.clone(), Vec::new());
                 node_map.insert(id.clone(), node);
                 indegree_map.insert(id.clone(), 0);
                 debug!("node_id: {}", id);
             }
-            for edge in (*state).compute_node_edges.iter() {
+            for edge in state.compute_node_edges.iter() {
                 let id1 = &edge.compute_node_id1;
                 let id2 = &edge.compute_node_id2;
                 let node2 = *node_map.get(id2).unwrap();
@@ -89,8 +89,8 @@ impl TopoService {
                 let indegree = indegree_map.get_mut(id2).unwrap();
                 *indegree = *indegree + 1;
             }
-            for i in 0..(*state).compute_nodes.len() {
-                let node = &(*state).compute_nodes[i] as *const ComputeNode;
+            for node in state.compute_nodes.iter() {
+                let node = node as *const ComputeNode;
                 let id = &(*node).id;
                 if *indegree_map.get(id).unwrap() == 0 {
                     let domain_id = &(*node).edge_domain_id;
@@ -98,8 +98,8 @@ impl TopoService {
                     (*domain).root_node_id = Some(id.clone());
                 }
             }
-            for i in 0..(*state).edge_domains.len() {
-                let domain = &(*state).edge_domains[i] as *const EdgeDomain;
+            for domain in state.edge_domains.iter() {
+                let domain = domain as *const EdgeDomain;
                 if (*domain).is_cloud {
                     continue;
                 }
@@ -121,6 +121,11 @@ impl TopoService {
                         tail = tail + 1;
                     }
                     head = head + 1;
+                }
+            }
+            for node in state.compute_nodes.iter_mut() {
+                if node.node_type == None {
+                    node.node_type = Some("cloud".to_string())
                 }
             }
         }

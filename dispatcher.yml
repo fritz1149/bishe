@@ -23,41 +23,7 @@ metadata:
   namespace: acbot-edge
 data:
   profile.toml: |+
-    [public_cloud]
-    info_management_address = "info-management.acbot-backend:30370"
-
-  create_table.sql: |+
-    drop table if exists edge_domains;
-    create table edge_domains (
-                                  id varchar(64) primary key default '',
-                                  name varchar(64) not null default '',
-                                  is_cloud boolean not null default false,
-                                  root_node_id varchar(64) not null default ''
-    );
-    drop table if exists compute_nodes;
-    create table compute_nodes (
-                                   id varchar(64) primary key default '',
-                                   ip_addr varchar(64) not null default '0.0.0.0',
-                                   slot integer not null default  0,
-                                   edge_domain_id varchar(64) not null default '',
-                                   father_hostname varchar(64) default '',
-                                   node_type varchar(64) check(node_type in ('leaf', 'non-leaf', 'cloud'))
-                                       not null default 'cloud'
-    );
-    drop table if exists compute_node_edges;
-    create table compute_node_edges (
-                                        compute_node_id1 varchar(64),
-                                        compute_node_id2 varchar(64),
-                                        primary key(compute_node_id1, compute_node_id2)
-    );
-    drop table if exists net_infos;
-    create table net_infos (
-                               origin_hostname varchar(64),
-                               target_hostname varchar(64),
-                               bandwidth Double,
-                               delay Double,
-                               primary key (origin_hostname, target_hostname)
-    )
+    info_management_address = "info-management.acbot-backend:8081"
   monitor.yml: |+
     kind: DaemonSet
     apiVersion: apps/v1
@@ -91,7 +57,7 @@ data:
               ports:
                 - containerPort: 5201
               volumeMounts:
-                - mountPath: /work/resources
+                - mountPath: /app/resources
                   name: config
           volumes:
             - name: config
@@ -168,17 +134,17 @@ spec:
     spec:
       serviceAccountName: acbot-edge-dispatcher
       nodeSelector:
-        "pos": cloud
+        kubernetes.io/hostname: vm-1
       containers:
         - name: dispatcher
           image: 19231149/dispatcher:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           volumeMounts:
-            - mountPath: /work/resources
+            - mountPath: /app/resources
               name: config
-            - mountPath: /work/sqlite
+            - mountPath: /app/sqlite
               name: sqlite
       volumes:
         - name: config
