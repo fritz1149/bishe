@@ -5,7 +5,8 @@ use std::rc::Rc;
 use std::slice::Iter;
 use tokio::runtime::{Handle, Runtime};
 use super::main::{Signal, Stage};
-use super::tasks::*;
+use super::common_tasks::*;
+use super::compute_tasks::*;
 
 pub type Task = fn(&Runtime) -> Result<(), &'static str>;
 
@@ -50,9 +51,12 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
     let init = TaskChain::new()
         .set_task(get_topo)
         // .set_task(deploy_traffic_monitor)
-        .set_next(Stage::Deploy)
+        // .set_next(Stage::Deploy)
+        // 测试用，暂时不自动进入部署阶段，而是只能手动触发部署阶段
+        .set_next(Stage::Run)
         .set_transfer(Signal::Stop, Stage::Stop);
     let deploy = TaskChain::new()
+        .set_task(calc_scheduling)
         .set_next(Stage::Run)
         .set_transfer(Signal::Stop, Stage::Stop);
     let run = TaskChain::new()

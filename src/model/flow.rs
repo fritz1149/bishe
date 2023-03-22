@@ -1,14 +1,14 @@
 use serde_json::Value;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamDef {
     pub name: String,
     pub bind_stream: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OperatorDef {
     pub id: u32,
@@ -25,10 +25,12 @@ pub struct OperatorDef {
     pub params: Vec<ParamDef>,
     pub returns: Vec<ParamDef>,
     pub communicate_by_IP: Option<bool>,
-    pub node_selector: Option<Value>
+    pub node_selector: Option<Value>,
+    pub operator_type: Option<String>,
+    pub host_constraint: Option<String>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct StreamDef {
     pub from_operator_id: u32,
@@ -37,7 +39,7 @@ pub struct StreamDef {
     pub to_operator_input_stream: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FlowDef {
     pub version: String,

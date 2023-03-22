@@ -17,7 +17,7 @@ const DATABASE_ERROR: &str = "数据库交互错误";
 const LOCK_ERROR: &str = "锁获取错误";
 
 pub struct TopoService{
-    state: Option<EdgeDomainGroup>
+    pub state: Option<EdgeDomainGroup>
 }
 
 impl TopoService {
@@ -154,6 +154,27 @@ impl TopoService {
             ComputeNodeEdge::insert_batch(&mut *rb, compute_node_edges, 20)
                 .await.map_err(|_|DATABASE_ERROR)?;
         }
+        Ok(self)
+    }
+    pub async fn load(mut self) -> Result<Self, &'static str> {
+        let mut rb = RB.lock().await;
+        let edge_domains = EdgeDomain::select_all(&mut *rb).await.map_err(|e| {
+            debug!("{}", e);
+            DATABASE_ERROR
+        })?;
+        let compute_nodes = ComputeNode::select_all(&mut *rb).await.map_err(|e| {
+            debug!("{}", e);
+            DATABASE_ERROR
+        })?;
+        let compute_node_edges = ComputeNodeEdge::select_all(&mut *rb).await.map_err(|e| {
+            debug!("{}", e);
+            DATABASE_ERROR
+        })?;
+        self.state = Some(EdgeDomainGroup{
+            edge_domains,
+            compute_nodes,
+            compute_node_edges
+        });
         Ok(self)
     }
 }

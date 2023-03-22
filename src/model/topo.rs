@@ -1,14 +1,48 @@
+use std::fmt::Formatter;
+use log::debug;
 use rbatis::Error;
 use rbatis::executor::Executor;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::Visitor;
+
+struct BoolVisitor;
+impl<'de> Visitor<'de> for BoolVisitor {
+    type Value = bool;
+
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        formatter.write_str("a boolean or binary")
+    }
+
+    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E> where E: serde::de::Error {
+        Ok(v)
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E> where E: serde::de::Error {
+        debug!("这是i64");
+        if v < 0 || v > 1 {
+            Err(E::custom("i64 input is not a binary"))
+        } else {
+            Ok(v == 1)
+        }
+    }
+}
+
+pub fn deserde_from_int<'de, D>(deserializer: D) -> Result<bool, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    deserializer.deserialize_bool(BoolVisitor)
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EdgeDomain {
     pub id: String,
     pub name: String,
+    #[serde(deserialize_with = "deserde_from_int")]
     pub is_cloud: bool,
     pub root_node_id: Option<String>
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ComputeNode {
     pub id: String,
@@ -23,6 +57,7 @@ pub struct ComputeNodeEdge {
     pub compute_node_id1: String,
     pub compute_node_id2: String,
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Target {
     pub hostname: String,

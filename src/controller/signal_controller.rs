@@ -4,6 +4,7 @@ use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::post;
+use log::debug;
 use serde_json::Value;
 use crate::daemon::main::Signal;
 use crate::TELL_DAEMON;
@@ -25,7 +26,10 @@ async fn get_signal(Query(mut params): Query<HashMap<String, String>>) -> impl I
             _ => return Err(PARSE_ERROR)
         };
         let tell_daemon = &*TELL_DAEMON.lock().unwrap();
-        tell_daemon.send(signal).map_err(|_|DAEMON_ERROR)?;
+        tell_daemon.send(signal).map_err(|e| {
+            debug!("{}", e);
+            DAEMON_ERROR
+        })?;
         Ok(())
     };
     match parse() {

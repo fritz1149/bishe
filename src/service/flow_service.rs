@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use log::debug;
@@ -5,7 +6,7 @@ use serde_json::Value;
 use crate::model::FlowDef;
 
 pub struct FlowService {
-    state: Option<FlowDef>
+    pub state: Option<Vec<FlowDef>>
 }
 
 const FORMAT_ERROR: &str = "格式错误";
@@ -15,7 +16,7 @@ impl FlowService {
     pub fn new() -> Self { Self{state: None} }
     pub async fn parse(mut self, payload: Value) -> Result<Self, &'static str> {
         debug!("parse");
-        let data: FlowDef = serde_json::from_value(payload).map_err(|e| {
+        let data: Vec<FlowDef> = serde_json::from_value(payload).map_err(|e| {
             debug!("{:?}", e);
             FORMAT_ERROR
         })?;
@@ -34,7 +35,7 @@ impl FlowService {
         let mut f = File::open("sqlite/flow.json").map_err(|_|FILE_ERROR)?;
         let mut data = String::new();
         f.read_to_string(&mut data).map_err(|_|FILE_ERROR)?;
-        let data: FlowDef = serde_json::from_str(&data).map_err(|_|FORMAT_ERROR)?;
+        let data: Vec<FlowDef> = serde_json::from_str(&data).map_err(|_|FORMAT_ERROR)?;
         self.state = Some(data);
         Ok(self)
     }
