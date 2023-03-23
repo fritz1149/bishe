@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::rc::Rc;
 use std::slice::Iter;
+use serde_json::Value;
 use tokio::runtime::{Handle, Runtime};
 use super::main::{Signal, Stage};
 use super::common_tasks::*;
-use super::compute_tasks::*;
+use super::schedule_tasks::*;
 
-pub type Task = fn(&Runtime) -> Result<(), &'static str>;
+pub type Task = fn(&Runtime, &mut Value) -> Result<(), &'static str>;
 
 pub struct TaskChain {
     task_vec: Vec<Task>,
@@ -57,6 +58,7 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
         .set_transfer(Signal::Stop, Stage::Stop);
     let deploy = TaskChain::new()
         .set_task(calc_scheduling)
+        .set_task(deploy_scheduling)
         .set_next(Stage::Run)
         .set_transfer(Signal::Stop, Stage::Stop);
     let run = TaskChain::new()

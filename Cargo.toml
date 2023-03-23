@@ -21,7 +21,7 @@ rbatis = { version = "4.0"}
 rbdc-sqlite = { version = "0.1" }
 lazy_static = "1.4.0"
 toml = "0.7.1"
-reqwest = "0.11.14"
+reqwest = { version = "0.11.14", features = ["json"] }
 futures = "0.3.26"
 #tower-http = { version = "0.3.5", features = ["trace"] }
 kube = { version = "0.78.0", features = ["runtime", "derive"] }

@@ -22,7 +22,7 @@ use crate::service::topo_service::TopoService;
 const REQWEST_FAILED: &str = "网络请求失败";
 const REQWEST_ERROR: &str = "网络请求状态异常";
 
-pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
+pub(super) fn get_topo(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
     // 初始化请求
     debug!("初始阶段任务：请求网络拓扑");
     let client = reqwest::Client::builder()
@@ -63,7 +63,7 @@ pub(super) fn get_topo(rt: &Runtime) -> Result<(), &'static str> {
 
 const K8S_CONTACT_ERROR: &str = "k8s集群交互错误";
 const SELECT_NODES_ERROR: &str = "读取节点错误";
-pub(super) fn deploy_traffic_monitor(rt: &Runtime) -> Result<(), &'static str> {
+pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
     let select_all = async {
         let mut rb = RB.lock().await;
         ComputeNode::select_all(&mut *rb).await
@@ -117,7 +117,7 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime) -> Result<(), &'static str> {
 }
 
 // 这就是Stop阶段的唯一任务
-pub(super) fn stop(rt: &Runtime) -> Result<(), &'static str> {
+pub(super) fn stop(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
     let remove_deploy = async {
         let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
         let ds_api: Api<DaemonSet> = Api::namespaced(client, "acbot-edge");

@@ -5,6 +5,7 @@ use std::thread;
 use std::thread::ThreadId;
 use std::time::Duration;
 use log::debug;
+use serde_json::Value;
 use tokio::runtime::Handle;
 use super::task_chain::*;
 
@@ -36,9 +37,10 @@ pub fn daemon_main() -> Sender<Signal> {
         let mut task_iter = task_chain.iter();
         let mut failed_task: Option<&Task> = None;
         let mut no_more_task = false;
+        let mut state: Value = Value::default();
         loop {
             if let Some(task) = failed_task.or(task_iter.next()) {
-                match task(&rt) {
+                match task(&rt, &mut state) {
                     Err(text) => {
                         failed_task = Some(task);
                         debug!("{}", text);
