@@ -17,9 +17,9 @@ RUN cargo build --release --bin monitor
 FROM networkstatic/iperf3:latest AS runtime
 RUN apt-get update && apt-get install -y inetutils-ping
 EXPOSE 5201
-COPY --from=builder /app/target/release/monitor /work/monitor
-COPY --from=builder /app/run.sh /work/run.sh
-WORKDIR work
+COPY --from=builder /app/target/release/monitor /app/monitor
+COPY --from=builder /app/run.sh /app/run.sh
+WORKDIR /app
 RUN chmod +x ./run.sh
 ENTRYPOINT ["./run.sh"]
 #ENTRYPOINT ["./monitor"]

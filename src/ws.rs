@@ -13,14 +13,14 @@ use tokio::task::JoinHandle;
 use crate::config::profile_config::CONFIG;
 use crate::handler::handlers::set_target;
 use crate::handler::route::handler_map;
-use crate::HOSTNAME;
+use crate::AUTHENTICATION;
 use crate::model::DaemonState;
 
 const CONNECTION_BREAK: &str = "连接中断";
 pub const PARSE_FAILED: &str = "解析失败";
 
 pub async fn connect() -> (UnboundedSender<Value>, JoinHandle<Result<(), &'static str>>, JoinHandle<Result<(), &'static str>>) {
-    let url = format!("ws://{}/ws/{}", &CONFIG.dispatcher.server_address, &HOSTNAME.as_str());
+    let url = format!("ws://{}/ws/{}", &CONFIG.dispatcher.server_address, &AUTHENTICATION.as_str());
     println!("{}", url);
     let (ws_stream, _) = connect_async(url).await.expect("ws连接失败");
     println!("ws连接成功");

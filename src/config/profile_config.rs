@@ -17,7 +17,8 @@ pub struct Dispatcher {
 #[derive(Deserialize)]
 #[derive(Debug)]
 pub struct Monitor {
-    pub interval: u32
+    pub interval: u32,
+    pub monitor_type: String
 }
 
 lazy_static! {

@@ -1,5 +1,5 @@
 #!/bin/bash
 iperf3 -s -D
-hostname=$1
-echo $hostname
-./monitor $hostname
+authentication=$1
+echo $authentication
+./monitor $authentication
