@@ -17,7 +17,7 @@ pub async fn delete_all(rb: &mut dyn Executor, table_name: &str) -> Result<ExecR
 }
 
 #[py_sql(
-"`select ip_addr as hostname from compute_nodes \
+"`select ip_addr as hostname, '5201' as port from compute_nodes \
 where father_hostname = #{hostname}`"
 )]
 pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<Target>, Error> {

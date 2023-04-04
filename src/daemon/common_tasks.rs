@@ -97,8 +97,8 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), 
         let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
         let ds_api: Api<DaemonSet> = Api::namespaced(client, "acbot-edge");
 
-        let err = "配置文件\"monitor.yml\"读取错误，流量监测部署失败";
-        let monitor_ds = std::fs::File::open("resources/monitor.yml").map_err(|_|err)?;
+        let err = "配置文件\"monitor-netedge.yml\"读取错误，流量监测部署失败";
+        let monitor_ds = std::fs::File::open("resources/monitor-netedge.yml").map_err(|_|err)?;
         let monitor_ds: DaemonSet = serde_yaml::from_reader(monitor_ds).map_err(|_|err)?;
         debug!("monitor: {:?}", monitor_ds);
 

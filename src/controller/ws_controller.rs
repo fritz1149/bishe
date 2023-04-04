@@ -1,8 +1,10 @@
-use axum::extract::{Path, WebSocketUpgrade};
+use std::collections::HashMap;
+use axum::extract::{Path, Query, WebSocketUpgrade};
 use axum::extract::ws::{Message, WebSocket};
 use axum::response::{IntoResponse, Response};
-use axum::{headers, Router, TypedHeader};
-use axum::routing::get;
+use axum::{headers, Json, Router, TypedHeader};
+use axum::http::StatusCode;
+use axum::routing::{get, post};
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt, TryFutureExt};
 use log::debug;
@@ -12,7 +14,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::oneshot::Receiver;
 use crate::config::sqlite_config::RB;
 use crate::handler::handler_map;
-use crate::model::ComputeNodeEdge;
+use crate::model::{ComputeNodeEdge, MonitorConfig, Target};
 use crate::orm::common_mapper;
 
 const CONNECTION_BREAK: &str = "连接中断";
@@ -21,6 +23,35 @@ const DATABASE_ERROR: &str = "数据库交互错误";
 pub(crate) fn api() -> Router {
     Router::new()
         .route("/:hostname", get(handler))
+        .route("/config", get(get_config))
+}
+
+const PARSE_ERROR: &str = "解码错误";
+async fn get_config(Query(mut params): Query<HashMap<String, String>>) -> Response {
+    let action = async {
+        let authentication = params.remove("authentication").ok_or(PARSE_ERROR)?;
+        let monitor_type = params.remove("type").ok_or(PARSE_ERROR)?;
+        let targets = match monitor_type.as_str() {
+            "NetEdge" => {
+                let mut rb = RB.lock().await;
+                let targets = common_mapper::select_targets(&mut *rb, &authentication).await.map_err(|_|DATABASE_ERROR)?;
+                // let targets: Vec<Target> = targets.into_iter().map(|target|Target{hostname: target, port: "5201".to_string()})
+                //     .collect();
+                targets
+            },
+            "FlowEdge" => {
+                Vec::new()
+            },
+            _ => {
+                return Err(PARSE_ERROR);
+            }
+        };
+        Ok(MonitorConfig{targets})
+    };
+    match action.await {
+        Ok(config) => (StatusCode::OK, Json(config)).into_response(),
+        Err(text) => (StatusCode::BAD_REQUEST, text).into_response()
+    }
 }
 
 async fn handler(ws: WebSocketUpgrade,
@@ -32,23 +63,23 @@ async fn handle_socket(mut socket: WebSocket, hostname: String) {
     debug!("client connected: {}", &hostname);
     let (mut sender, mut receiver) = socket.split();
     let (async_send, async_recv) = mpsc::unbounded_channel();
-    let select_targets = ||async {
-        let mut rb = RB.lock().await;
-        common_mapper::select_targets(&mut *rb, &hostname).await
-    };
-    match select_targets().await {
-        Ok(targets) => {
-            let msg = json!({
-                "type": "SetTarget",
-                "data": targets
-            });
-            async_send.send(msg).expect("传输网络访问目标失败");
-        },
-        Err(_) => {
-            debug!("SetTargets: {}", DATABASE_ERROR);
-            return;
-        }
-    }
+    // let select_targets = ||async {
+    //     let mut rb = RB.lock().await;
+    //     common_mapper::select_targets(&mut *rb, &hostname).await
+    // };
+    // match select_targets().await {
+    //     Ok(targets) => {
+    //         let msg = json!({
+    //             "type": "SetTarget",
+    //             "data": targets
+    //         });
+    //         async_send.send(msg).expect("传输网络访问目标失败");
+    //     },
+    //     Err(_) => {
+    //         debug!("SetTargets: {}", DATABASE_ERROR);
+    //         return;
+    //     }
+    // }
     tokio::spawn(write(sender, hostname.clone(), async_recv));
     tokio::spawn(read(receiver, hostname.clone()));
 }

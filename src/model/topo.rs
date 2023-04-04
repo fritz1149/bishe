@@ -61,6 +61,11 @@ pub struct ComputeNodeEdge {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Target {
     pub hostname: String,
+    pub port: String
+}
+#[derive(Serialize)]
+pub struct MonitorConfig {
+    pub targets: Vec<Target>
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NetInfo {

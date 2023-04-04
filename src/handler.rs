@@ -9,7 +9,8 @@ use crate::orm::common_mapper;
 
 pub fn handler_map() -> HashMap<String, fn(Value) -> Result<(), &'static str>> {
     let mut map: HashMap<String, fn(Value) -> Result<(), &'static str>> = HashMap::new();
-    map.insert("NetInfo".to_string(), save_net_info);
+    map.insert("NetEdge".to_string(), save_net_info);
+    map.insert("FlowEdge".to_string(), save_flow_edge);
     map
 }
 
@@ -27,5 +28,9 @@ pub fn save_net_info(data: Value) -> Result<(), &'static str> {
         }
     };
     tokio::spawn(action);
+    Ok(())
+}
+
+pub fn save_flow_edge(data: Value) -> Result<(), &'static str> {
     Ok(())
 }

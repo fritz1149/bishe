@@ -15,6 +15,7 @@ data:
     
     [monitor]
     interval = 5
+    monitor_type = "NetEdge"
 ---
 kind: ConfigMap
 apiVersion: v1

@@ -116,7 +116,7 @@ impl TopoService {
                         (*u).node_type = Some("non-leaf".to_string())
                     }
                     for v in edges {
-                        (*v).father_hostname = Some(uid.clone());
+                        (*v).father_hostname = Some((*u).ip_addr.clone());
                         q.push(&(*v).id);
                         tail = tail + 1;
                     }
