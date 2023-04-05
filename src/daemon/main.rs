@@ -26,6 +26,7 @@ pub enum Signal {
     NoSignal
 }
 
+const MAX_FAIL_TIME: u32 = 10;
 pub fn daemon_main() -> Sender<Signal> {
     let (send, recv) = mpsc::channel();
     let daemon = move || {
@@ -36,6 +37,7 @@ pub fn daemon_main() -> Sender<Signal> {
         let mut task_chain = task_map.get(&Stage::Init).unwrap();
         let mut task_iter = task_chain.iter();
         let mut failed_task: Option<&Task> = None;
+        let mut failed_time = 0;
         let mut no_more_task = false;
         let mut state: Value = Value::default();
         loop {
@@ -43,9 +45,16 @@ pub fn daemon_main() -> Sender<Signal> {
                 match task(&rt, &mut state) {
                     Err(text) => {
                         failed_task = Some(task);
+                        failed_time += 1;
                         debug!("{}", text);
+                        if failed_time > MAX_FAIL_TIME {
+                            panic!("已失败{}次，超过最大重试次数，守护进程退出", failed_time);
+                        }
+                        debug!("即将睡眠{}秒后重试", 10 * failed_time);
+                        thread::sleep(Duration::from_secs(10 * failed_time as u64));
                     }
                     Ok(text) => {
+                        failed_time = 0;
                         failed_task = None;
                     }
                 }

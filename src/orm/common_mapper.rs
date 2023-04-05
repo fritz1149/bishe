@@ -3,7 +3,7 @@ use rbatis::{Error, impl_select, impled};
 use rbatis::py_sql;
 use rbatis::rbdc::db::ExecResult;
 use crate::config::sqlite_config::RB;
-use crate::model::{EdgeDomain, ComputeNode, ComputeNodeEdge, Target, NetInfo};
+use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, NetEdgeTarget, NetInfo};
 
 rbatis::crud!(EdgeDomain {}, "edge_domains");
 rbatis::crud!(ComputeNode {}, "compute_nodes");
@@ -17,10 +17,10 @@ pub async fn delete_all(rb: &mut dyn Executor, table_name: &str) -> Result<ExecR
 }
 
 #[py_sql(
-"`select ip_addr as hostname, '5201' as port from compute_nodes \
+"`select ip_addr as name from compute_nodes \
 where father_hostname = #{hostname}`"
 )]
-pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<Target>, Error> {
+pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<NetEdgeTarget>, Error> {
     impled!()
 }
 
