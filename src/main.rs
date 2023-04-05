@@ -4,11 +4,10 @@ use lazy_static::lazy_static;
 use tokio::join;
 use crate::config::profile_config::CONFIG;
 use crate::daemon::daemon_main;
-use crate::model::DaemonState;
+use crate::model::{DaemonState, Targets};
 use crate::ws::connect;
 
 mod config;
-mod handler;
 mod model;
 mod ws;
 mod daemon;
@@ -17,7 +16,7 @@ mod monitor_strategy;
 
 lazy_static! {
     pub static ref AUTHENTICATION: String = env::args().nth(1).unwrap_or_else(|| panic!("未输入监控凭据作为命令行参数"));
-    pub static ref DAEMON_STATE: Mutex<DaemonState> = Mutex::new(DaemonState{targets:Vec::new()});
+    pub static ref DAEMON_STATE: Mutex<DaemonState> = Mutex::new(DaemonState{targets: Targets::None});
 }
 
 #[tokio::main]

@@ -2,14 +2,20 @@ use std::process::{Command, Stdio};
 use serde_json::Value;
 use tokio::runtime::Runtime;
 use crate::AUTHENTICATION;
-use crate::model::{NetInfo, Target};
+use crate::model::{NetEdgeTarget, NetEdgeInfo, Targets};
 use super::MonitorStrategy;
 
 pub struct NetEdgeStrategy;
 
 impl MonitorStrategy for NetEdgeStrategy {
-    fn exec(&self, rt: &Runtime, targets: &Vec<Target>) -> Value {
-        let results = rt.block_on(action(targets));
+    fn exec(&self, rt: &Runtime, targets: &Targets) -> Value {
+        let targets_;
+        if let Targets::NetEdgeTargets(x) = targets {
+            targets_ = x;
+        } else {
+            panic!("解析目标失败");
+        }
+        let results = rt.block_on(action(targets_));
         let mut response = Vec::new();
         for result in results {
             if let Ok(infos) = result {
@@ -23,11 +29,11 @@ impl MonitorStrategy for NetEdgeStrategy {
     }
 }
 
-async fn action(targets: &Vec<Target>) -> Vec<Result<[NetInfo; 2], &str>> {
+async fn action(targets: &Vec<NetEdgeTarget>) -> Vec<Result<[NetEdgeInfo; 2], &str>> {
     let mut handles = Vec::with_capacity(targets.len());
     for target in targets.iter() {
-        println!("{}:", target.hostname);
-        handles.push(tokio::spawn(get_info(target.hostname.clone())));
+        println!("{}:", target.name);
+        handles.push(tokio::spawn(get_info(target.name.clone())));
     }
     let mut results = Vec::with_capacity(handles.len());
     for handle in handles {
@@ -40,7 +46,7 @@ const BANDWIDTH_MEASURE_FAILED: &str = "网络参数测量失败";
 const DELAY_MEASURE_FAILED: &str = "网络延迟测量失败";
 const PARSE_FAILED: &str = "信息解析失败";
 // fn get_info(hostname: String) -> Result<NetInfo, &'static str> {
-async fn get_info(hostname: String) -> Result<[NetInfo;2], &'static str> {
+async fn get_info(hostname: String) -> Result<[NetEdgeInfo;2], &'static str> {
     let test_bandwidth = || {
         let output = Command::new("iperf3")
             .arg("-c")
@@ -85,13 +91,13 @@ async fn get_info(hostname: String) -> Result<[NetInfo;2], &'static str> {
     let (sender_bandwidth, receiver_bandwidth) = test_bandwidth()?;
     let delay = test_delay()? / 2.0;
     Ok([
-        NetInfo{
+        NetEdgeInfo {
             origin_hostname: AUTHENTICATION.clone(),
             target_hostname: hostname.clone(),
             bandwidth: sender_bandwidth,
             delay
         },
-        NetInfo{
+        NetEdgeInfo {
             origin_hostname: hostname.clone(),
             target_hostname: AUTHENTICATION.clone(),
             bandwidth: receiver_bandwidth,

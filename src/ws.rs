@@ -11,8 +11,6 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Sender, Receiver, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 use crate::config::profile_config::CONFIG;
-use crate::handler::handlers::set_target;
-use crate::handler::route::handler_map;
 use crate::AUTHENTICATION;
 use crate::model::DaemonState;
 
@@ -32,9 +30,6 @@ pub async fn connect() -> (UnboundedSender<Value>, JoinHandle<Result<(), &'stati
 }
 
 async fn read(mut recv: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>) -> Result<(), &'static str> {
-
-    let mut handler_map = handler_map();
-
     while let raw = recv.next().await {
         let raw = raw.ok_or(CONNECTION_BREAK)?.map_err(|_|CONNECTION_BREAK)?;
         let raw = raw.to_text().map_err(|_|PARSE_FAILED)?;
@@ -45,10 +40,8 @@ async fn read(mut recv: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>)
         let cmd_type: String = serde_json::from_value(
             cmd.remove("type").ok_or(PARSE_FAILED)?).map_err(|_|PARSE_FAILED)?;
         println!("cmd_type: {}", cmd_type);
-        let handler = handler_map.get(&cmd_type).ok_or(PARSE_FAILED)?;
         let data = cmd.remove("data").ok_or(PARSE_FAILED)?;
         println!("data: {}", data.to_string());
-        handler(data)?;
     }
     Ok(())
 }
