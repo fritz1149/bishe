@@ -43,6 +43,16 @@ pub struct FlowEdgeInfo {
     pub queue_name: String,
     pub delivery_rate: f64,
 }
+// 算子相关参数
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OpInfo {
+    pub op_exec_time: f64,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FlowInfo {
+    pub flow_edge_infos: Vec<FlowEdgeInfo>,
+    pub op_info: OpInfo
+}
 
 // rabbitmq请求结果
 #[derive(Clone, Debug, Serialize, Deserialize)]
