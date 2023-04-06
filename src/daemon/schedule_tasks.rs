@@ -8,6 +8,9 @@ use crate::config::profile_config::CONFIG;
 use crate::service::flow_service::FlowService;
 use crate::service::topo_service::TopoService;
 use std::iter::zip;
+use crate::config::sqlite_config::RB;
+use crate::model::Instance;
+use crate::orm::common_mapper::insert_flow_edge_infos;
 
 const PYTHON_ERROR: &str = "python调用异常";
 pub(super) fn calc_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'static str> {
@@ -36,6 +39,7 @@ pub(super) fn calc_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'s
 
 const REQWEST_FAILED: &str = "网络请求失败";
 const REQWEST_ERROR: &str = "网络请求状态异常";
+const DATABASE_ERROR: &str = "数据库交互错误";
 pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'static str> {
     let schedule_plans = state.as_array().unwrap();
     let flow_service = FlowService::new();
@@ -53,12 +57,13 @@ pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &
         }
     }
     let url = format!("http://{}/deploy", &CONFIG.flowdeploy_backend_address);
-    debug!("url: {}", url);
-    for flow_def in flow_def_list {
+    // debug!("url: {}", url);
+    let mut instances = Vec::with_capacity(flow_def_list.len());
+    for (i, flow_def) in flow_def_list.into_iter().enumerate() {
         let client = reqwest::Client::builder()
             .no_proxy()
             .build().unwrap();
-        debug!("flow_def: {}", serde_json::to_string(&flow_def).unwrap());
+        // debug!("flow_def: {}", serde_json::to_string(&flow_def).unwrap());
         let request = async {
             let response = client.post(url.clone())
                 .json(&flow_def)
@@ -66,7 +71,7 @@ pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &
                 .send()
                 .await.map_err(|e| { debug!("{:?}", e); REQWEST_FAILED })?;
             // 解析过程
-            if response.status().as_u16() != 200{
+            if response.status().as_u16() != 200 {
                 debug!("状态码: {}", response.status().as_u16());
                 debug!("文本信息： {}", response.text().await.unwrap());
                 return Err(REQWEST_ERROR);
@@ -74,11 +79,24 @@ pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &
             let text = response
                 .text()
                 .await.map_err(|e| { debug!("{:?}", e); REQWEST_FAILED })?;
-            let text: Value = serde_json::from_str(&*text).map_err(|e| { debug!("{:?}", e); REQWEST_FAILED })?;
-            debug!("deploy_scheduling_result: {}", text);
+            let mut res: Value = serde_json::from_str(&*text).map_err(|e| { debug!("{:?}", e); REQWEST_FAILED })?;
+            debug!("deploy_scheduling_result: {}", res);
+            let instance_uuid = res["instanceUUID"].take().as_str().unwrap().to_string();
+            instances.push(Instance{
+                id: instance_uuid,
+                flow_id: i as u32
+            });
             Ok(())
         };
         rt.block_on(request)?;
     }
-    Ok(())
+    rt.block_on(async {
+        let mut rb = RB.lock().await;
+        Instance::insert_batch(&mut *rb, &instances, 20).await
+            .map_err(|e| {
+                debug!("流式计算实例信息存储错误: {}", e.to_string());
+                DATABASE_ERROR
+            })?;
+        Ok(())
+    })
 }

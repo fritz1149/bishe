@@ -31,4 +31,19 @@ create table if not exists net_infos (
     bandwidth Double,
     delay Double,
     primary key (origin_hostname, target_hostname)
-)
+);
+
+drop table if exists instances;
+create table if not exists instances (
+    id varchar(64),
+    flow_id integer,
+    primary key(id)
+);
+
+drop table if exists flow_edge_infos;
+create table if not exists flow_edge_infos (
+    op_name varchar(64),
+    instance_id varchar(64),
+    delivery_rate Double,
+    primary key (op_name, instance_id)
+);

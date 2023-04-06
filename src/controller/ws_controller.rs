@@ -18,6 +18,7 @@ use crate::handler::handler_map;
 use crate::model::{ComputeNodeEdge, FlowEdgeTarget, NetEdgeTarget, Targets};
 use crate::model::{MonitorConfig};
 use crate::orm::common_mapper;
+use crate::service::flow_service::FlowService;
 
 const CONNECTION_BREAK: &str = "连接中断";
 const DATABASE_ERROR: &str = "数据库交互错误";
@@ -42,7 +43,12 @@ async fn get_config(Query(mut params): Query<HashMap<String, String>>) -> Respon
                 Targets::NetEdgeTargets(targets)
             },
             "FlowEdge" => {
-                Targets::FlowEdgeTargets(vec![FlowEdgeTarget{endpoint: "localhost:15672".to_string(), queue_name: "main".to_string()}])
+                let flow_service = FlowService::new().load().await?;
+                if flow_service.is_sink(&authentication).await? {
+                    Targets::FlowEdgeTargets(Vec::new())
+                } else {
+                    Targets::FlowEdgeTargets(vec![FlowEdgeTarget{endpoint: "localhost:15672".to_string(), queue_name: "main".to_string()}])
+                }
             },
             _ => {
                 return Err(PARSE_ERROR);
@@ -94,7 +100,7 @@ async fn read(mut recv: SplitStream<WebSocket>, hostname: String) -> Result<(), 
         let mut msg: Value = serde_json::from_str(msg).unwrap();
         let msg_type: String = serde_json::from_value(msg["type"].take()).unwrap();
         let data = msg["data"].take();
-        debug!("from {}: msg_type: {}, data:{}", &hostname, msg_type, data.to_string());
+        // debug!("from {}: msg_type: {}, data:{}", &hostname, msg_type, data.to_string());
         let handler = handler_map.get(&msg_type).unwrap();
         handler(data)?;
     }

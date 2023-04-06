@@ -20,14 +20,16 @@ pub fn init() -> Rbatis {
     rb
 }
 
-pub async fn create_table(rb: &Rbatis) {
+pub async fn create_table() {
+    let rb = RB.lock().await;
+    debug!("开始建表");
     let sql = std::fs::read_to_string("sql/create_table.sql").unwrap();
     let raw = fast_log::LOGGER.get_level().clone();
     fast_log::LOGGER.set_level(LevelFilter::Off);
     let res = rb.exec(&sql, vec![]).await;
-    if let Err(_) = res {
-        debug!("创建表失败");
-    }
     fast_log::LOGGER.set_level(raw);
+    match res {
+        Ok(x) => debug!("建表结果: {}", x.to_string()),
+        Err(_) => debug!("创建表失败")
+    }
 }
-

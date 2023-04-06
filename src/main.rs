@@ -29,7 +29,7 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     fast_log::init(Config::new().console().chan_len(Some(100000)).level(Debug)).unwrap();
-    config::sqlite_config::create_table(&*RB.lock().await).await;
+    config::sqlite_config::create_table().await;
     let tmp = &*TELL_DAEMON;
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))

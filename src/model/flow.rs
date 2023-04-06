@@ -48,3 +48,15 @@ pub struct FlowDef {
     pub operators: Vec<OperatorDef>,
     pub streams: Vec<StreamDef>
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Instance {
+    pub id: String,
+    pub flow_id: u32,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FlowEdgeInfo {
+    pub op_name: String,
+    pub instance_id: String,
+    pub delivery_rate: f64
+}
