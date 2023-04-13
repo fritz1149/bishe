@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use log::debug;
 use serde_json::Value;
-use crate::config::sqlite_config::RB;
+use crate::config::sqlite_config::SQLITE;
 use crate::model::{FlowDef, Instance};
 
 pub struct FlowService {
@@ -47,7 +47,7 @@ impl FlowService {
         let op_name = auth[0].to_string();
         let instance_uuid = auth[1];
 
-        let mut rb = RB.lock().await;
+        let mut rb = SQLITE.lock().await;
         let mut res = Instance::select_by_column(&mut *rb, "id", instance_uuid).await
             .map_err(|_|DATABASE_ERROR)?;
         let flow_id = res.get(0).ok_or(DATABASE_ERROR)?.flow_id;

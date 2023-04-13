@@ -50,6 +50,31 @@ pub struct FlowDef {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkDef {
+    pub from_role_id: u32,
+    pub from_role_output_port: u32,
+    pub to_role_id: u32,
+    pub to_role_input_port: u32
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FlowDefOrigin {
+    pub version: String,
+    pub robot_id: String,
+    pub edge_device_id: String,
+    pub roles: Vec<OperatorDef>,
+    pub links: Vec<LinkDef>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FlowInstance {
+    pub id: String,
+    pub flow_def: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Instance {
     pub id: String,
     pub flow_id: u32,

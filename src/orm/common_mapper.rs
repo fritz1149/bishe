@@ -2,8 +2,8 @@ use rbatis::executor::Executor;
 use rbatis::{Error, impl_select, impled};
 use rbatis::py_sql;
 use rbatis::rbdc::db::ExecResult;
-use crate::config::sqlite_config::RB;
-use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, Instance, NetEdgeTarget, NetInfo};
+use crate::config::sqlite_config::SQLITE;
+use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, FlowInstance, Instance, NetEdgeTarget, NetInfo};
 
 rbatis::crud!(EdgeDomain {}, "edge_domains");
 rbatis::crud!(ComputeNode {}, "compute_nodes");
@@ -69,5 +69,14 @@ trim ',':
 delivery_rate = excluded.delivery_rate`"
 )]
 pub async fn insert_flow_edge_infos(rb: &mut dyn Executor, tables: &[FlowEdgeInfo]) -> Result<ExecResult, Error> {
+    impled!()
+}
+
+#[py_sql(
+"`select id, flow_definition as flow_def \
+from flow_instances \
+where status = 'running'`"
+)]
+pub async fn select_flow_instances_assigned(rb: &mut dyn Executor) -> Result<Vec<FlowInstance>, Error> {
     impled!()
 }

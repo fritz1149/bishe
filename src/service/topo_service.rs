@@ -8,7 +8,7 @@ use rbatis::Rbatis;
 use serde_json::{Map, Value};
 use tokio::try_join;
 use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, EdgeDomainGroup};
-use crate::config::sqlite_config::RB;
+use crate::config::sqlite_config::SQLITE;
 use crate::orm::common_mapper;
 
 const KEY_NOT_FOUND: &str = "传入数据键缺失";
@@ -49,7 +49,7 @@ impl TopoService {
     }
     pub async fn clear(self) -> Result<Self, &'static str> {
         let delete_all = |table_name|async move{
-            let mut rb = RB.lock().await;
+            let mut rb = SQLITE.lock().await;
             common_mapper::delete_all(&mut *rb, table_name).await
         };
         try_join!(delete_all("edge_domains"),
@@ -116,7 +116,7 @@ impl TopoService {
                         (*u).node_type = Some("non-leaf".to_string())
                     }
                     for v in edges {
-                        (*v).father_hostname = Some((*u).ip_addr.clone());
+                        (*v).father_hostname = Some((*u).name.clone());
                         q.push(&(*v).id);
                         tail = tail + 1;
                     }
@@ -135,7 +135,7 @@ impl TopoService {
     }
     pub async fn save(self) -> Result<Self, &'static str> {
         let edge_domains = &self.state.as_ref().unwrap().edge_domains;
-        let mut rb = RB.lock().await;
+        let mut rb = SQLITE.lock().await;
         if edge_domains.len() > 0 {
             EdgeDomain::insert_batch(&mut *rb, edge_domains, 20)
                 .await.map_err(|e| {
@@ -157,7 +157,7 @@ impl TopoService {
         Ok(self)
     }
     pub async fn load(mut self) -> Result<Self, &'static str> {
-        let mut rb = RB.lock().await;
+        let mut rb = SQLITE.lock().await;
         let edge_domains = EdgeDomain::select_all(&mut *rb).await.map_err(|e| {
             debug!("{}", e);
             DATABASE_ERROR

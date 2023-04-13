@@ -4,16 +4,19 @@ use std::sync::mpsc::{RecvError, RecvTimeoutError, Sender};
 use std::thread;
 use std::thread::ThreadId;
 use std::time::Duration;
+use lazy_static::lazy_static;
 use log::debug;
 use serde_json::Value;
 use tokio::runtime::Handle;
 use super::task_chain::*;
+use std::sync::Mutex;
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
 pub enum Stage {
     Init,
     Deploy,
     Run,
+    Rest,
     Stop
 }
 
@@ -22,8 +25,23 @@ pub enum Signal {
     Stop,
     Start,
     Redeploy,
+    Rest,
     Quit,
     NoSignal
+}
+
+lazy_static!{
+    pub static ref STAGE: Mutex<Stage> = Mutex::new(Stage::Init);
+}
+
+pub fn set_stage(stage: Stage) {
+    let mut stage_ = STAGE.lock().unwrap();
+    *stage_ = stage;
+}
+
+pub fn get_stage() -> Stage {
+    let stage = STAGE.lock().unwrap();
+    stage.clone()
 }
 
 const MAX_FAIL_TIME: u32 = 10;
@@ -64,6 +82,7 @@ pub fn daemon_main() -> Sender<Signal> {
                         task_chain = task_map.get(stage).unwrap();
                         task_iter = task_chain.iter();
                         no_more_task = false;
+                        set_stage(stage.clone());
                     }
             else {
                 no_more_task = true;
@@ -94,6 +113,7 @@ pub fn daemon_main() -> Sender<Signal> {
                         task_chain = task_map.get(stage).unwrap();
                         task_iter = task_chain.iter();
                         no_more_task = false;
+                        set_stage(stage.clone());
                     };
                 }
             }

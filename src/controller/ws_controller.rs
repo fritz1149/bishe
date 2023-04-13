@@ -13,7 +13,7 @@ use serde_json::{json, Value};
 use tokio::sync::{mpsc, oneshot};
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::oneshot::Receiver;
-use crate::config::sqlite_config::RB;
+use crate::config::sqlite_config::SQLITE;
 use crate::handler::handler_map;
 use crate::model::{ComputeNodeEdge, FlowEdgeTarget, NetEdgeTarget, Targets};
 use crate::model::{MonitorConfig};
@@ -36,7 +36,7 @@ async fn get_config(Query(mut params): Query<HashMap<String, String>>) -> Respon
         let monitor_type = params.remove("type").ok_or(PARSE_ERROR)?;
         let targets: Targets = match monitor_type.as_str() {
             "NetEdge" => {
-                let mut rb = RB.lock().await;
+                let mut rb = SQLITE.lock().await;
                 let targets = common_mapper::select_targets(&mut *rb, &authentication).await.map_err(|_|DATABASE_ERROR)?;
                 // let targets: Vec<Value> = targets.into_iter().map(|target|serde_json::to_value(target).unwrap())
                 //     .collect();
@@ -72,7 +72,7 @@ async fn handle_socket(mut socket: WebSocket, hostname: String) {
     let (mut sender, mut receiver) = socket.split();
     let (async_send, async_recv) = mpsc::unbounded_channel();
     // let select_targets = ||async {
-    //     let mut rb = RB.lock().await;
+    //     let mut rb = SQLITE.lock().await;
     //     common_mapper::select_targets(&mut *rb, &hostname).await
     // };
     // match select_targets().await {
@@ -102,7 +102,7 @@ async fn read(mut recv: SplitStream<WebSocket>, hostname: String) -> Result<(), 
         let data = msg["data"].take();
         // debug!("from {}: msg_type: {}, data:{}", &hostname, msg_type, data.to_string());
         let handler = handler_map.get(&msg_type).unwrap();
-        handler(data)?;
+        handler(data, &hostname)?;
     }
     Ok(())
 }

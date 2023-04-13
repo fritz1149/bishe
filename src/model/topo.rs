@@ -46,7 +46,7 @@ pub struct EdgeDomain {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ComputeNode {
     pub id: String,
-    pub ip_addr: String,
+    pub name: String,
     pub slot: i32,
     pub edge_domain_id: String,
     pub father_hostname: Option<String>,

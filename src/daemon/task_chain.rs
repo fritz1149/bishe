@@ -52,16 +52,21 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
     let init = TaskChain::new()
         .set_task(get_topo)
         // .set_task(deploy_traffic_monitor)
-        // .set_next(Stage::Deploy)
-        // 测试用，暂时不自动进入部署阶段，而是只能手动触发部署阶段
-        .set_next(Stage::Run)
+        .set_next(Stage::Deploy)
+        // .set_next(Stage::Run)
         .set_transfer(Signal::Stop, Stage::Stop);
     let deploy = TaskChain::new()
-        .set_task(calc_scheduling)
-        .set_task(deploy_scheduling)
+        .set_task(fetch_flows)
+        // .set_task(calc_scheduling)
+        // .set_task(deploy_scheduling)
         .set_next(Stage::Run)
-        .set_transfer(Signal::Stop, Stage::Stop);
+        .set_transfer(Signal::Stop, Stage::Stop)
+        .set_transfer(Signal::Rest, Stage::Rest);
     let run = TaskChain::new()
+        .set_transfer(Signal::Redeploy, Stage::Deploy)
+        .set_transfer(Signal::Rest, Stage::Rest)
+        .set_transfer(Signal::Stop, Stage::Stop);
+    let rest = TaskChain::new()
         .set_transfer(Signal::Redeploy, Stage::Deploy)
         .set_transfer(Signal::Stop, Stage::Stop);
     let stop = TaskChain::new()
@@ -71,6 +76,7 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
     map.insert(Stage::Init, init);
     map.insert(Stage::Deploy, deploy);
     map.insert(Stage::Run, run);
+    map.insert(Stage::Rest, rest);
     map.insert(Stage::Stop, stop);
     map
 }

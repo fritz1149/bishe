@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub struct Config {
     pub info_management_address: String,
     pub flowdeploy_backend_address: String,
+    pub pgsql_address: String,
 }
 
 lazy_static!{

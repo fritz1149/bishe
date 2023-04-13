@@ -16,7 +16,7 @@ use fast_log::Config;
 use log::debug;
 use rbatis::Rbatis;
 use tokio::runtime::Handle;
-use crate::config::sqlite_config::RB;
+use crate::config::sqlite_config::SQLITE;
 use crate::daemon::main::{daemon_main, Signal};
 use std::thread;
 use lazy_static::lazy_static;

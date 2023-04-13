@@ -8,9 +8,22 @@ use crate::config::profile_config::CONFIG;
 use crate::service::flow_service::FlowService;
 use crate::service::topo_service::TopoService;
 use std::iter::zip;
-use crate::config::sqlite_config::RB;
+use crate::config::pg_config::PG;
+use crate::config::sqlite_config::SQLITE;
 use crate::model::Instance;
+use crate::orm::common_mapper;
 use crate::orm::common_mapper::insert_flow_edge_infos;
+
+const DATABASE_ERROR: &str = "数据库交互错误";
+pub(super) fn fetch_flows(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
+    let fetch = async {
+        let mut rb = PG.lock().await;
+        return common_mapper::select_flow_instances_assigned(&mut *rb).await;
+    };
+    let instances = rt.block_on(fetch).map_err(|_|DATABASE_ERROR)?;
+    debug!("实例: {:?}", instances);
+    Ok(())
+}
 
 const PYTHON_ERROR: &str = "python调用异常";
 pub(super) fn calc_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'static str> {
@@ -39,7 +52,6 @@ pub(super) fn calc_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'s
 
 const REQWEST_FAILED: &str = "网络请求失败";
 const REQWEST_ERROR: &str = "网络请求状态异常";
-const DATABASE_ERROR: &str = "数据库交互错误";
 pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &'static str> {
     let schedule_plans = state.as_array().unwrap();
     let flow_service = FlowService::new();
@@ -91,7 +103,7 @@ pub(super) fn deploy_scheduling(rt: &Runtime, state: &mut Value) -> Result<(), &
         rt.block_on(request)?;
     }
     rt.block_on(async {
-        let mut rb = RB.lock().await;
+        let mut rb = SQLITE.lock().await;
         Instance::insert_batch(&mut *rb, &instances, 20).await
             .map_err(|e| {
                 debug!("流式计算实例信息存储错误: {}", e.to_string());

@@ -9,7 +9,7 @@ create table if not exists edge_domains (
 drop table if exists compute_nodes;
 create table if not exists compute_nodes (
     id varchar(64) primary key default '',
-    ip_addr varchar(64) not null default '0.0.0.0',
+    name varchar(64) not null default '0.0.0.0',
     slot integer not null default  0,
     edge_domain_id varchar(64) not null default '',
     father_hostname varchar(64) default '',

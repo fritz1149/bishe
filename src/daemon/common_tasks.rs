@@ -15,7 +15,7 @@ use tokio::join;
 use tokio::runtime::{Handle, Runtime};
 use tokio::time::sleep;
 use crate::config::profile_config::CONFIG;
-use crate::config::sqlite_config::RB;
+use crate::config::sqlite_config::SQLITE;
 use crate::model::ComputeNode;
 use crate::service::topo_service::TopoService;
 
@@ -65,7 +65,7 @@ const K8S_CONTACT_ERROR: &str = "k8s集群交互错误";
 const SELECT_NODES_ERROR: &str = "读取节点错误";
 pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
     let select_all = async {
-        let mut rb = RB.lock().await;
+        let mut rb = SQLITE.lock().await;
         ComputeNode::select_all(&mut *rb).await
     };
     // 给节点打标签
@@ -75,7 +75,7 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), 
         let node_api: Api<Node> = Api::all(client);
         let nodes = select_all.await.map_err(|e|SELECT_NODES_ERROR)?;
         for node in nodes {
-            let hostname = node.ip_addr;
+            let hostname = node.name;
             let node_type = node.node_type.unwrap();
             let patch = json!({
                     "metadata": {
@@ -122,8 +122,8 @@ pub(super) fn stop(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
         let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
         let ds_api: Api<DaemonSet> = Api::namespaced(client, "acbot-edge");
         let params: DeleteParams = Default::default();
-        let res = ds_api.delete("monitor", &params).await.unwrap();
-        let res = ds_api.delete("iperf-server", &params).await.unwrap();
+        let res = ds_api.delete("monitor", &params).await;
+        let res = ds_api.delete("iperf-server", &params).await;
         Ok::<(),&'static str>(())
     };
     rt.block_on(remove_deploy)

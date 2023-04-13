@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 // 加载全局资源
 lazy_static!{
-    pub static ref RB: Mutex<Rbatis> = Mutex::new(
+    pub static ref SQLITE: Mutex<Rbatis> = Mutex::new(
         init()
     );
 }
@@ -21,7 +21,7 @@ pub fn init() -> Rbatis {
 }
 
 pub async fn create_table() {
-    let rb = RB.lock().await;
+    let rb = SQLITE.lock().await;
     debug!("开始建表");
     let sql = std::fs::read_to_string("sql/create_table.sql").unwrap();
     let raw = fast_log::LOGGER.get_level().clone();
