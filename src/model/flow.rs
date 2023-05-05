@@ -26,7 +26,7 @@ pub struct OperatorDef {
     pub returns: Vec<ParamDef>,
     pub communicate_by_IP: Option<bool>,
     pub node_selector: Option<Value>,
-    pub operator_type: Option<String>,
+    pub operator_type: String,
     pub host_constraint: Option<String>
 }
 
@@ -41,12 +41,13 @@ pub struct StreamDef {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct FlowDef {
-    pub version: String,
-    pub robot_id: String,
-    pub edge_device_id: String,
+pub struct FlowInstance {
+    pub version: Option<String>,
+    pub robot_id: Option<String>,
+    pub edge_device_id: Option<String>,
     pub operators: Vec<OperatorDef>,
-    pub streams: Vec<StreamDef>
+    pub streams: Vec<StreamDef>,
+    pub instance_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -61,15 +62,23 @@ pub struct LinkDef {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FlowDefOrigin {
-    pub version: String,
-    pub robot_id: String,
-    pub edge_device_id: String,
+    pub version: Option<String>,
+    pub robot_id: Option<String>,
+    pub edge_device_id: Option<String>,
     pub roles: Vec<OperatorDef>,
     pub links: Vec<LinkDef>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FlowInstance {
+pub struct FlowInstanceDeploy {
+    pub id: String,
+    pub operator_index: u32,
+    pub operator_id: String,
+    pub compute_node_id: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FlowInstanceOrigin {
     pub id: String,
     pub flow_def: String
 }
@@ -79,6 +88,7 @@ pub struct Instance {
     pub id: String,
     pub flow_id: u32,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FlowEdgeInfo {
     pub op_name: String,

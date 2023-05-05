@@ -5,11 +5,12 @@ use std::rc::Rc;
 use std::slice::Iter;
 use serde_json::Value;
 use tokio::runtime::{Handle, Runtime};
+use crate::daemon::rest_tasks::stop_instances;
 use super::main::{Signal, Stage};
 use super::common_tasks::*;
-use super::schedule_tasks::*;
+use super::deploy_tasks::*;
 
-pub type Task = fn(&Runtime, &mut Value) -> Result<(), &'static str>;
+pub type Task = fn(&Runtime, &mut HashMap<&str, Value>) -> Result<(), &'static str>;
 
 pub struct TaskChain {
     task_vec: Vec<Task>,
@@ -50,6 +51,7 @@ impl TaskChain {
 
 pub fn task_map() -> HashMap<Stage, TaskChain> {
     let init = TaskChain::new()
+        .set_task(stop)
         .set_task(get_topo)
         // .set_task(deploy_traffic_monitor)
         .set_next(Stage::Deploy)
@@ -57,16 +59,17 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
         .set_transfer(Signal::Stop, Stage::Stop);
     let deploy = TaskChain::new()
         .set_task(fetch_flows)
-        // .set_task(calc_scheduling)
-        // .set_task(deploy_scheduling)
+        .set_task(calc_scheduling)
+        .set_task(deploy_scheduling)
         .set_next(Stage::Run)
-        .set_transfer(Signal::Stop, Stage::Stop)
-        .set_transfer(Signal::Rest, Stage::Rest);
+        .set_transfer(Signal::Rest, Stage::Rest)
+        .set_transfer(Signal::Stop, Stage::Stop);
     let run = TaskChain::new()
         .set_transfer(Signal::Redeploy, Stage::Deploy)
         .set_transfer(Signal::Rest, Stage::Rest)
         .set_transfer(Signal::Stop, Stage::Stop);
     let rest = TaskChain::new()
+        .set_task(stop_instances)
         .set_transfer(Signal::Redeploy, Stage::Deploy)
         .set_transfer(Signal::Stop, Stage::Stop);
     let stop = TaskChain::new()

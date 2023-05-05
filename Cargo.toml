@@ -19,6 +19,7 @@ rbs = { version = "0.1"}
 rbatis = { version = "4.0"}
 # choose one rbdc drivier
 rbdc-sqlite = { version = "0.1" }
+rbdc-pg = { version = "0.1" }
 lazy_static = "1.4.0"
 toml = "0.7.1"
 reqwest = { version = "0.11.14", features = ["json"] }

@@ -24,6 +24,7 @@ async fn set_signal(Query(mut params): Query<HashMap<String, String>>) -> impl I
             "stop" => Signal::Stop,
             "start" => Signal::Start,
             "redeploy" => Signal::Redeploy,
+            "rest" => Signal::Rest,
             _ => return Err(PARSE_ERROR)
         };
         let tell_daemon = &*TELL_DAEMON.lock().unwrap();

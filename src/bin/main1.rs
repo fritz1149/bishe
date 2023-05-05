@@ -1,4 +1,9 @@
 fn main() {
-    let raw = std::fs::read_to_string("resources/monitor.yml").unwrap();
-    println!("{}", raw);
+    let s = String::from("hello world");
+    let t = &s;
+    say(t);
+}
+
+fn say(s: &str) {
+    println!("{}",s);
 }

@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use rbatis::executor::Executor;
 use rbatis::{Error, impl_select, impled};
 use rbatis::py_sql;
 use rbatis::rbdc::db::ExecResult;
 use crate::config::sqlite_config::SQLITE;
-use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, FlowInstance, Instance, NetEdgeTarget, NetInfo};
+use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, FlowInstance, FlowInstanceDeploy, FlowInstanceOrigin, Instance, NetEdgeTarget, NetInfo};
 
 rbatis::crud!(EdgeDomain {}, "edge_domains");
 rbatis::crud!(ComputeNode {}, "compute_nodes");
@@ -11,6 +12,7 @@ rbatis::crud!(ComputeNodeEdge {}, "compute_node_edges");
 rbatis::crud!(NetInfo {}, "net_infos");
 rbatis::crud!(Instance {}, "instances");
 rbatis::crud!(FlowEdgeInfo {}, "flow_edge_infos");
+rbatis::crud!(FlowInstanceDeploy {}, "flow_instance_deploys");
 
 #[py_sql(
 "`delete from ${table_name} `"
@@ -20,7 +22,7 @@ pub async fn delete_all(rb: &mut dyn Executor, table_name: &str) -> Result<ExecR
 }
 
 #[py_sql(
-"`select ip_addr as name from compute_nodes \
+"`select name from compute_nodes \
 where father_hostname = #{hostname}`"
 )]
 pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<NetEdgeTarget>, Error> {
@@ -77,6 +79,13 @@ pub async fn insert_flow_edge_infos(rb: &mut dyn Executor, tables: &[FlowEdgeInf
 from flow_instances \
 where status = 'running'`"
 )]
-pub async fn select_flow_instances_assigned(rb: &mut dyn Executor) -> Result<Vec<FlowInstance>, Error> {
+pub async fn select_flow_instances_assigned(rb: &mut dyn Executor) -> Result<Vec<FlowInstanceOrigin>, Error> {
+    impled!()
+}
+
+#[py_sql(
+"`select distinct id from flow_instance_deploys`"
+)]
+pub async fn select_flow_instances_deployed(rb: &mut dyn Executor) -> Result<Vec<HashMap<String, String>>, Error> {
     impled!()
 }

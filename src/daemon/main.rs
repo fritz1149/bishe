@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc;
 use std::sync::mpsc::{RecvError, RecvTimeoutError, Sender};
 use std::thread;
@@ -57,7 +57,7 @@ pub fn daemon_main() -> Sender<Signal> {
         let mut failed_task: Option<&Task> = None;
         let mut failed_time = 0;
         let mut no_more_task = false;
-        let mut state: Value = Value::default();
+        let mut state: HashMap<&str, Value> = HashMap::new();
         loop {
             if let Some(task) = failed_task.or(task_iter.next()) {
                 match task(&rt, &mut state) {
@@ -113,6 +113,7 @@ pub fn daemon_main() -> Sender<Signal> {
                         task_chain = task_map.get(stage).unwrap();
                         task_iter = task_chain.iter();
                         no_more_task = false;
+                        failed_task = None;
                         set_stage(stage.clone());
                     };
                 }

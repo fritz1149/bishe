@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Formatter;
 use log::debug;
 use rbatis::Error;
@@ -79,5 +80,12 @@ impl EdgeDomainGroup {
             compute_nodes: Vec::new(),
             compute_node_edges: Vec::new()
         }
+    }
+    pub fn node_map(&self) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        for node in self.compute_nodes.iter() {
+            map.insert(node.id.clone(), node.name.clone());
+        }
+        map
     }
 }

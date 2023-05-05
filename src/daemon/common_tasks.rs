@@ -16,13 +16,14 @@ use tokio::runtime::{Handle, Runtime};
 use tokio::time::sleep;
 use crate::config::profile_config::CONFIG;
 use crate::config::sqlite_config::SQLITE;
+use crate::daemon::rest_tasks::stop_instances;
 use crate::model::ComputeNode;
 use crate::service::topo_service::TopoService;
 
 const REQWEST_FAILED: &str = "网络请求失败";
 const REQWEST_ERROR: &str = "网络请求状态异常";
 
-pub(super) fn get_topo(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
+pub(super) fn get_topo(rt: &Runtime, _: &mut HashMap<&str, Value>) -> Result<(), &'static str> {
     // 初始化请求
     debug!("初始阶段任务：请求网络拓扑");
     let client = reqwest::Client::builder()
@@ -63,7 +64,7 @@ pub(super) fn get_topo(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> 
 
 const K8S_CONTACT_ERROR: &str = "k8s集群交互错误";
 const SELECT_NODES_ERROR: &str = "读取节点错误";
-pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
+pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut HashMap<&str, Value>) -> Result<(), &'static str> {
     let select_all = async {
         let mut rb = SQLITE.lock().await;
         ComputeNode::select_all(&mut *rb).await
@@ -97,8 +98,8 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), 
         let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
         let ds_api: Api<DaemonSet> = Api::namespaced(client, "acbot-edge");
 
-        let err = "配置文件\"monitor-netedge.yml\"读取错误，流量监测部署失败";
-        let monitor_ds = std::fs::File::open("resources/monitor-netedge.yml").map_err(|_|err)?;
+        let err = "配置文件\"monitor.yml\"读取错误，流量监测部署失败";
+        let monitor_ds = std::fs::File::open("resources/monitor.yml").map_err(|_|err)?;
         let monitor_ds: DaemonSet = serde_yaml::from_reader(monitor_ds).map_err(|_|err)?;
         debug!("monitor: {:?}", monitor_ds);
 
@@ -117,7 +118,7 @@ pub(super) fn deploy_traffic_monitor(rt: &Runtime, _: &mut Value) -> Result<(), 
 }
 
 // 这就是Stop阶段的唯一任务
-pub(super) fn stop(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
+pub(super) fn stop(rt: &Runtime, state: &mut HashMap<&str, Value>) -> Result<(), &'static str> {
     let remove_deploy = async {
         let client = Client::try_default().await.map_err(|_|K8S_CONTACT_ERROR)?;
         let ds_api: Api<DaemonSet> = Api::namespaced(client, "acbot-edge");
@@ -126,5 +127,6 @@ pub(super) fn stop(rt: &Runtime, _: &mut Value) -> Result<(), &'static str> {
         let res = ds_api.delete("iperf-server", &params).await;
         Ok::<(),&'static str>(())
     };
+    stop_instances(rt, state)?;
     rt.block_on(remove_deploy)
 }

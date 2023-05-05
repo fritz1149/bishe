@@ -43,8 +43,7 @@ async fn get_config(Query(mut params): Query<HashMap<String, String>>) -> Respon
                 Targets::NetEdgeTargets(targets)
             },
             "FlowEdge" => {
-                let flow_service = FlowService::new().load().await?;
-                if flow_service.is_sink(&authentication).await? {
+                if FlowService::new().load()?.is_sink(&authentication)? {
                     Targets::FlowEdgeTargets(Vec::new())
                 } else {
                     Targets::FlowEdgeTargets(vec![FlowEdgeTarget{endpoint: "localhost:15672".to_string(), queue_name: "main".to_string()}])
