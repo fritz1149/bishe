@@ -5,7 +5,8 @@ use serde::Deserialize;
 #[derive(Debug)]
 pub struct Config {
     pub dispatcher: Dispatcher,
-    pub monitor: Monitor
+    pub monitor: Monitor,
+    pub prometheus: Prometheus,
 }
 
 #[derive(Deserialize)]
@@ -17,8 +18,13 @@ pub struct Dispatcher {
 #[derive(Deserialize)]
 #[derive(Debug)]
 pub struct Monitor {
-    pub interval: u32,
-    pub monitor_type: String
+    pub interval: u32
+}
+
+#[derive(Deserialize)]
+#[derive(Debug)]
+pub struct Prometheus {
+    pub pushgateway_address: String
 }
 
 lazy_static! {

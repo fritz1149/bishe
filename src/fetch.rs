@@ -1,39 +1,29 @@
 use std::process::{Command, Stdio};
 use serde_json::Value;
 use tokio::runtime::Runtime;
-use crate::AUTHENTICATION;
-use crate::model::{NetEdgeTarget, NetEdgeInfo, Targets};
-use super::MonitorStrategy;
+use crate::{AUTHENTICATION, DAEMON_STATE};
+use crate::model::{NetEdgeInfo, Host};
 
-pub struct NetEdgeStrategy;
-
-impl MonitorStrategy for NetEdgeStrategy {
-    fn exec(&self, rt: &Runtime, targets: &Targets) -> Value {
-        let targets_;
-        if let Targets::NetEdgeTargets(x) = targets {
-            targets_ = x;
+pub fn exec(rt: &Runtime) -> Vec<NetEdgeInfo> {
+    let results = rt.block_on(action());
+    let mut response = Vec::new();
+    for result in results {
+        if let Ok(infos) = result {
+            let mut infos = infos.to_vec();
+            response.append(&mut infos);
         } else {
-            panic!("解析目标失败");
+            println!("err: {}", result.err().unwrap());
         }
-        let results = rt.block_on(action(targets_));
-        let mut response = Vec::new();
-        for result in results {
-            if let Ok(infos) = result {
-                let mut infos = infos.to_vec();
-                response.append(&mut infos);
-            } else {
-                println!("err: {}", result.err().unwrap());
-            }
-        }
-        serde_json::to_value(response).unwrap()
     }
+    response
 }
 
-async fn action(targets: &Vec<NetEdgeTarget>) -> Vec<Result<[NetEdgeInfo; 2], &str>> {
+async fn action() -> Vec<Result<[NetEdgeInfo; 2], &'static str>> {
+    let targets = &DAEMON_STATE.get().unwrap().targets;
     let mut handles = Vec::with_capacity(targets.len());
     for target in targets.iter() {
         println!("{}:", target.name);
-        handles.push(tokio::spawn(get_info(target.name.clone())));
+        handles.push(tokio::spawn(get_info(target)));
     }
     let mut results = Vec::with_capacity(handles.len());
     for handle in handles {
@@ -46,11 +36,12 @@ const BANDWIDTH_MEASURE_FAILED: &str = "网络参数测量失败";
 const DELAY_MEASURE_FAILED: &str = "网络延迟测量失败";
 const PARSE_FAILED: &str = "信息解析失败";
 // fn get_info(hostname: String) -> Result<NetInfo, &'static str> {
-async fn get_info(hostname: String) -> Result<[NetEdgeInfo;2], &'static str> {
+async fn get_info(target: &Host) -> Result<[NetEdgeInfo;2], &'static str> {
+    let hostname = &target.name;
     let test_bandwidth = || {
         let output = Command::new("iperf3")
             .arg("-c")
-            .arg(&hostname)
+            .arg(hostname)
             .arg("-J")
             .arg("-t")
             .arg("3")
@@ -71,7 +62,7 @@ async fn get_info(hostname: String) -> Result<[NetEdgeInfo;2], &'static str> {
     };
     let test_delay = || {
         let ping = Command::new("ping")
-            .args([&hostname, "-W", "5", "-c", "2"])
+            .args([hostname, "-W", "5", "-c", "2"])
             .stdout(Stdio::piped())
             .spawn()
             .unwrap()
@@ -90,18 +81,35 @@ async fn get_info(hostname: String) -> Result<[NetEdgeInfo;2], &'static str> {
     };
     let (sender_bandwidth, receiver_bandwidth) = test_bandwidth()?;
     let delay = test_delay()? / 2.0;
-    Ok([
-        NetEdgeInfo {
-            origin_hostname: AUTHENTICATION.clone(),
-            target_hostname: hostname.clone(),
-            bandwidth: sender_bandwidth,
-            delay
-        },
-        NetEdgeInfo {
-            origin_hostname: hostname.clone(),
-            target_hostname: AUTHENTICATION.clone(),
-            bandwidth: receiver_bandwidth,
-            delay
-        }
-    ])
+    if DAEMON_STATE.get().unwrap().cross_domain {
+        Ok([
+            NetEdgeInfo {
+                source: DAEMON_STATE.get().unwrap().self_host.domain_id.clone(),
+                target: target.domain_id.clone(),
+                bandwidth: sender_bandwidth,
+                delay
+            },
+            NetEdgeInfo {
+                source: target.domain_id.clone(),
+                target: DAEMON_STATE.get().unwrap().self_host.domain_id.clone(),
+                bandwidth: receiver_bandwidth,
+                delay
+            }
+        ])
+    } else {
+        Ok([
+            NetEdgeInfo {
+                source: DAEMON_STATE.get().unwrap().self_host.id.clone(),
+                target: target.id.clone(),
+                bandwidth: sender_bandwidth,
+                delay
+            },
+            NetEdgeInfo {
+                source: target.id.clone(),
+                target: DAEMON_STATE.get().unwrap().self_host.id.clone(),
+                bandwidth: receiver_bandwidth,
+                delay
+            }
+        ])
+    }
 }

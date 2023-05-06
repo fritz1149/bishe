@@ -4,19 +4,18 @@ use futures::executor::block_on;
 use serde_json::Value;
 use crate::{AUTHENTICATION, DAEMON_STATE};
 use crate::config::profile_config::CONFIG;
-use crate::model::MonitorConfig;
+use crate::model::{MonitorConfig, NetEdgeInfo};
 
 const REQWEST_FAILED: &str = "网络请求失败";
 const REQWEST_ERROR: &str = "网络请求状态异常";
 const PARSE_FAILED: &str = "解码失败";
-pub async fn request_config() -> Result<(), &'static str> {
+pub fn request_config() -> MonitorConfig {
     let client = reqwest::Client::builder()
         .no_proxy()
         .build().unwrap();
     let url = format!("http://{}/ws/config", &CONFIG.dispatcher.server_address);
     let mut params = HashMap::new();
-    params.insert("type", &CONFIG.monitor.monitor_type);
-    params.insert("authentication", &AUTHENTICATION);
+    params.insert("authentication", AUTHENTICATION.as_str());
     let request = async {
         // 请求过程
         let response = client.get(url)
@@ -33,9 +32,7 @@ pub async fn request_config() -> Result<(), &'static str> {
             .json::<MonitorConfig>().await
             .map_err(|_|PARSE_FAILED)?;
         println!("请求的配置：{:?}", monitor_config);
-        let mut daemon_state = DAEMON_STATE.lock().unwrap();
-        daemon_state.targets = monitor_config.targets;
-        Ok(())
+        Ok(monitor_config)
     };
-    request.await
+    block_on(request).unwrap_or(MonitorConfig::new())
 }
