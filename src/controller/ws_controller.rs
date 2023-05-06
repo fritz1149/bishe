@@ -15,8 +15,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::oneshot::Receiver;
 use crate::config::sqlite_config::SQLITE;
 use crate::handler::handler_map;
-use crate::model::{ComputeNodeEdge, FlowEdgeTarget, NetEdgeTarget, Targets};
-use crate::model::{MonitorConfig};
+use crate::model::{ComputeNodeEdge, EdgeDomain, MonitorConfig};
 use crate::orm::common_mapper;
 use crate::service::flow_service::FlowService;
 
@@ -32,28 +31,15 @@ pub(crate) fn api() -> Router {
 const PARSE_ERROR: &str = "解码错误";
 async fn get_config(Query(mut params): Query<HashMap<String, String>>) -> Response {
     let action = async {
-        let authentication = params.remove("authentication").ok_or(PARSE_ERROR)?;
-        let monitor_type = params.remove("type").ok_or(PARSE_ERROR)?;
-        let targets: Targets = match monitor_type.as_str() {
-            "NetEdge" => {
-                let mut rb = SQLITE.lock().await;
-                let targets = common_mapper::select_targets(&mut *rb, &authentication).await.map_err(|_|DATABASE_ERROR)?;
-                // let targets: Vec<Value> = targets.into_iter().map(|target|serde_json::to_value(target).unwrap())
-                //     .collect();
-                Targets::NetEdgeTargets(targets)
-            },
-            "FlowEdge" => {
-                if FlowService::new().load()?.is_sink(&authentication)? {
-                    Targets::FlowEdgeTargets(Vec::new())
-                } else {
-                    Targets::FlowEdgeTargets(vec![FlowEdgeTarget{endpoint: "localhost:15672".to_string(), queue_name: "main".to_string()}])
-                }
-            },
-            _ => {
-                return Err(PARSE_ERROR);
-            }
-        };
-        Ok(MonitorConfig{targets})
+        let hostname = params.remove("authentication").ok_or(PARSE_ERROR)?;
+        let mut rb = SQLITE.lock().await;
+        let targets = common_mapper::select_targets(&mut *rb, &hostname).await.map_err(|_|DATABASE_ERROR)?;
+        let self_host = common_mapper::select_by_hostname(&mut *rb, &hostname).await.map_err(|_|DATABASE_ERROR)?;
+        let domain = EdgeDomain::select_by_column(&mut *rb, "id", &self_host.domain_id).await.map_err(|_|DATABASE_ERROR)?
+            .remove(0);
+        let cross_domain = domain.is_cloud;
+        debug!("monitor config {:?} {:?} {:?}", targets, self_host, cross_domain);
+        Ok::<MonitorConfig, &'static str>(MonitorConfig{ targets, self_host, cross_domain })
     };
     match action.await {
         Ok(config) => (StatusCode::OK, Json(config)).into_response(),

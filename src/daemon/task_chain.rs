@@ -53,7 +53,7 @@ pub fn task_map() -> HashMap<Stage, TaskChain> {
     let init = TaskChain::new()
         .set_task(stop)
         .set_task(get_topo)
-        // .set_task(deploy_traffic_monitor)
+        .set_task(deploy_traffic_monitor)
         .set_next(Stage::Deploy)
         // .set_next(Stage::Run)
         .set_transfer(Signal::Stop, Stage::Stop);

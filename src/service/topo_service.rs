@@ -1,4 +1,6 @@
 use std::collections::{HashMap, VecDeque};
+use std::panic::panic_any;
+use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use axum::body::HttpBody;
@@ -20,6 +22,7 @@ pub struct TopoService{
     pub state: Option<EdgeDomainGroup>
 }
 
+const NO_CLOUD_DOMAIN: &str = "没有云域";
 impl TopoService {
     pub fn new() -> Self {
         Self{state: None}
@@ -73,6 +76,7 @@ impl TopoService {
                 let id = &(*domain).id;
                 domain_map.insert(id.clone(), domain);
             }
+
             for node in state.compute_nodes.iter_mut() {
                 let node = node as *mut ComputeNode;
                 let id = &(*node).id;
@@ -89,21 +93,32 @@ impl TopoService {
                 let indegree = indegree_map.get_mut(id2).unwrap();
                 *indegree = *indegree + 1;
             }
-            for node in state.compute_nodes.iter() {
-                let node = node as *const ComputeNode;
+            let mut cloud_root_node: *mut ComputeNode = null_mut();
+            for node in state.compute_nodes.iter_mut() {
+                let node = node as *mut ComputeNode;
                 let id = &(*node).id;
                 if *indegree_map.get(id).unwrap() == 0 {
                     let domain_id = &(*node).edge_domain_id;
                     let domain = *domain_map.get(domain_id).unwrap();
                     (*domain).root_node_id = Some(id.clone());
+                    if (*domain).is_cloud {
+                        cloud_root_node = node;
+                    }
                 }
             }
+            if cloud_root_node.is_null() {
+                return Err(NO_CLOUD_DOMAIN);
+            }
+            (*cloud_root_node).node_type = Some("non-leaf".to_string());
+
             for domain in state.edge_domains.iter() {
                 let domain = domain as *const EdgeDomain;
                 if (*domain).is_cloud {
                     continue;
                 }
                 let root = (*domain).root_node_id.as_ref().unwrap();
+                let root_node = *node_map.get(root).unwrap();
+                (*root_node).father_hostname = Some((*cloud_root_node).name.clone());
                 let mut q = vec![root];
                 let (mut head, mut tail) = (0, 0);
                 while head <= tail {

@@ -4,7 +4,7 @@ use rbatis::{Error, impl_select, impled};
 use rbatis::py_sql;
 use rbatis::rbdc::db::ExecResult;
 use crate::config::sqlite_config::SQLITE;
-use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, FlowInstance, FlowInstanceDeploy, FlowInstanceOrigin, Instance, NetEdgeTarget, NetInfo};
+use crate::model::{ComputeNode, ComputeNodeEdge, EdgeDomain, FlowEdgeInfo, FlowInstance, FlowInstanceDeploy, FlowInstanceOrigin, Host, Instance, NetInfo};
 
 rbatis::crud!(EdgeDomain {}, "edge_domains");
 rbatis::crud!(ComputeNode {}, "compute_nodes");
@@ -22,10 +22,18 @@ pub async fn delete_all(rb: &mut dyn Executor, table_name: &str) -> Result<ExecR
 }
 
 #[py_sql(
-"`select name from compute_nodes \
+"`select id, name, edge_domain_id as domain_id from compute_nodes \
 where father_hostname = #{hostname}`"
 )]
-pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<NetEdgeTarget>, Error> {
+pub async fn select_targets(rb: &mut dyn Executor, hostname: &str) -> Result<Vec<Host>, Error> {
+    impled!()
+}
+
+#[py_sql(
+"`select id, name, edge_domain_id as domain_id from compute_nodes \
+where name = #{hostname}`"
+)]
+pub async fn select_by_hostname(rb: &mut dyn Executor, hostname: &str) -> Result<Host, Error> {
     impled!()
 }
 

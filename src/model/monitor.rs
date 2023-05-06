@@ -2,23 +2,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct NetEdgeTarget {
-    pub name: String
+pub struct Host {
+    pub id: String,
+    pub name: String,
+    pub domain_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FlowEdgeTarget {
-    pub endpoint: String,
-    pub queue_name: String
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Targets {
-    NetEdgeTargets(Vec<NetEdgeTarget>),
-    FlowEdgeTargets(Vec<FlowEdgeTarget>)
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct MonitorConfig {
-    pub targets: Targets
+    pub targets: Vec<Host>,
+    pub self_host: Host,
+    pub cross_domain: bool
 }
